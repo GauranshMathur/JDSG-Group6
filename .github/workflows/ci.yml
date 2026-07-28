@@ -187,9 +187,12 @@ jobs:
           allow_issue_writing: false
           cmd_options: "-a"
 
+      # Guarded because these run even when an earlier step failed before the
+      # container was ever created, and "No such container" should not add a
+      # second, misleading failure on top of the real one.
       - name: Container logs
         if: always()
-        run: docker logs web
+        run: docker logs web || echo "No container to log."
 
       - name: Stop the container
         if: always()
