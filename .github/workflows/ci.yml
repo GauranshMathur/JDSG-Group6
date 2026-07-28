@@ -122,15 +122,21 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # Only CRITICAL fails here. HIGH findings in the upstream ruby:slim base
-      # image are not actionable from this repository — they are fixed by bumping
-      # the base image, which is a deliberate change rather than a CI failure.
+      # Same threshold as the filesystem scan: HIGH and CRITICAL fail, MEDIUM and
+      # LOW are reported without blocking. A failure here is a signal that the
+      # base image needs bumping or a package needs patching — treat it as work
+      # to do, not as noise to route around.
+      #
+      # ignore-unfixed keeps this achievable: only findings with a fix available
+      # count. A HIGH with no upstream patch cannot be actioned by any change in
+      # this repository, so failing on it would just teach everyone to ignore
+      # the gate.
       - name: Trivy image scan
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: image
           image-ref: twitter-clone-web:${{ github.sha }}
-          severity: CRITICAL
+          severity: CRITICAL,HIGH
           ignore-unfixed: true
           exit-code: "1"
 

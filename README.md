@@ -242,16 +242,19 @@ once these pass. Jobs run in parallel:
 | **Lint** | RuboCop with `rubocop-rails-omakase` | any offence |
 | **Test** | RSpec on SQLite | any failure |
 | **SAST** | Brakeman, bundler-audit, Trivy filesystem scan | any Brakeman warning, any gem CVE, any fixable HIGH/CRITICAL |
-| **Container** | Builds the image, Trivy image scan, boots it, OWASP ZAP baseline scan | fixable CRITICAL in the image, or the container failing to serve `/up` |
+| **Container** | Builds the image, Trivy image scan, boots it, OWASP ZAP baseline scan | any fixable HIGH/CRITICAL in the image, or the container failing to serve `/up` |
 | **SonarQube** | Quality gate | quality gate failure — skipped while unconfigured |
 
-Two deliberate asymmetries in the security gates:
+On the security gates:
 
-- **Filesystem scan fails on HIGH; image scan only on CRITICAL.** Filesystem findings are in
-  code and dependencies this repository controls, so they are actionable here. Image HIGHs
-  usually come from the upstream `ruby:slim` base and are fixed by bumping the base image —
-  a deliberate change, not something a feature branch should be blocked on. Full image
-  results are still uploaded to GitHub code scanning.
+- **Trivy fails on HIGH and CRITICAL, in both the filesystem and the image scan.** MEDIUM
+  and LOW are reported without blocking. A HIGH in the image is usually inherited from the
+  base image rather than written here, but inherited is not the same as acceptable — the
+  fix is to bump the base image or patch the package, and the build stays red until someone
+  does. Full results are also uploaded to GitHub code scanning.
+- **`ignore-unfixed` is on**, so only findings with an available fix count. A vulnerability
+  with no upstream patch cannot be actioned by any change in this repository; failing on it
+  would only teach everyone to ignore the gate.
 - **DAST reports but does not fail.** A baseline scan of a fresh Rails app flags
   header-level warnings (CSP, permissions policy) that are real but out of scope for
   milestone 1. Once triaged, flip `fail_action` to `true` so regressions block.

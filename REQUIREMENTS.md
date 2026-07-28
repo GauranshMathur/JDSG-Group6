@@ -75,12 +75,13 @@ Recorded so the shape of the system is visible; none are being built yet.
 | N-3.1 | Brakeman runs on every pull request and fails on any warning | Met |
 | N-3.2 | Gem CVEs are detected by bundler-audit on every pull request | Met |
 | N-3.3 | Trivy scans the source tree; any fixable HIGH or CRITICAL fails the build | Met |
-| N-3.4 | Trivy scans the built image; any fixable CRITICAL fails the build | Met |
+| N-3.4 | Trivy scans the built image; any fixable HIGH or CRITICAL fails the build | Met |
 | N-3.5 | A DAST baseline scan runs against the running container | Partial — runs, but does not yet fail the build |
 | N-3.6 | The container runs as a non-root user | Met |
 | N-3.7 | The production image contains no development or test dependencies | Met |
 | N-3.8 | User-supplied content is escaped on output | Met — ERB escapes by default |
 | N-3.9 | Secrets are never committed; Trivy scans for them | Met |
+| N-3.10 | The base image is kept current, since inherited CVEs fail the build like any other | Met |
 
 ### 2.4 Delivery
 
