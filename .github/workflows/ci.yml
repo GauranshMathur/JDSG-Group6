@@ -110,6 +110,13 @@ jobs:
 
       # Built once and reused by the scan and the DAST run below, so the image
       # that gets scanned is the image that gets exercised.
+      #
+      # Single-architecture on purpose, unlike the release build. This image is
+      # only ever scanned and booted on this runner, `load: true` cannot take a
+      # multi-platform manifest list anyway, and building arm64 under QEMU would
+      # add minutes to every pull request for no extra signal. The Dockerfile is
+      # shared, so a genuinely architecture-specific break would still surface in
+      # the release build.
       - name: Build image
         uses: docker/build-push-action@v6
         with:
