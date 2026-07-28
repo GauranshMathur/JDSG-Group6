@@ -63,7 +63,13 @@ jobs:
           bump="none"
           while IFS= read -r -d $'\x1e' commit; do
             [ -z "${commit//[[:space:]]/}" ] && continue
-            subject=$(printf '%s\n' "$commit" | head -n1)
+
+            # The first non-blank line, not simply the first line. Every record
+            # after the newest begins with the newline that terminated the
+            # previous one, so taking line 1 yields an empty subject and the
+            # commit goes unclassified — which silently under-bumps whenever the
+            # release-worthy commit is not the newest one in the range.
+            subject=$(printf '%s\n' "$commit" | grep -m1 -v '^[[:space:]]*$' || true)
 
             if printf '%s\n' "$commit" | grep -qE '^BREAKING[ -]CHANGE:' ||
                printf '%s\n' "$subject" | grep -qE '^[a-z]+(\([^)]*\))?!:'; then
