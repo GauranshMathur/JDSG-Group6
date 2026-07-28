@@ -280,13 +280,23 @@ polls `/up` until the app answers, so a broken image fails CI rather than a depl
 3. Create the git tag and a GitHub release with generated notes.
 4. Build the image and tag it with the version, `sha-<commit>`, and `latest`.
 5. Push it to the **GitHub Container Registry** at
-   `ghcr.io/gauranshmathur/twitter-clone-web`.
+   `ghcr.io/gauranshmathur/twitter-clone-web`, for both `linux/amd64` and `linux/arm64`.
 
 **Registry: GHCR, for now.** It needs no provisioning — the built-in `GITHUB_TOKEN`
 authenticates the push, so there is no registry to create and no secret to manage. Amazon
 ECR is written into the workflow and commented out; it arrives with the AWS work, at which
 point the image can be pushed to both. Enabling it before the repository and the OIDC role
 exist only produces red builds.
+
+**Architectures:** release images are published as a manifest list covering `linux/amd64`
+and `linux/arm64`, so `docker pull` selects the right variant. Without the arm64 half, a
+pull on an Apple Silicon machine fails outright with `no matching manifest for
+linux/arm64`, and AWS Graviton instances want arm64 too. The arm64 build runs under QEMU on
+GitHub's x86 runners and is noticeably slower; if that becomes a problem the answer is a
+native arm64 runner, not dropping the platform.
+
+Pull request builds stay single-architecture. That image is only scanned and booted on the
+runner, and paying the emulation cost on every pull request buys no extra signal.
 
 **Image tagging:** every image carries an immutable `sha-<commit>` tag alongside the
 semantic version, so a deployment can always be pinned to an exact build.
