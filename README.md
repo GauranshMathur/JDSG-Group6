@@ -174,27 +174,36 @@ Conventions:
 - Releases are git tags of the form `v0.3.1`.
 - `CHANGELOG.md` is generated from commit history, not hand-edited.
 
-**TODO:** pick the release tooling — GitHub Actions with
-[`release-please`](https://github.com/googleapis/release-please) is the leading candidate.
+**TODO:** pick the release tooling. Note that `release-please` — the usual first choice —
+works by opening and maintaining a release pull request, which does not fit a trunk-based,
+no-PR workflow. A tool that tags directly from commits on push (semantic-release, or a
+small custom action over `git describe` plus commit parsing) is the better fit here.
 
 ## CI/CD
 
-GitHub Actions. Planned pipelines, none implemented yet:
+GitHub Actions. Planned pipeline, not implemented yet.
 
-**On every pull request**
+Development is trunk-based — every commit lands on `main`, so there is a single pipeline
+rather than a pull-request stage and a merge stage:
+
+**On every push to `main`**
 
 1. Lint — RuboCop.
 2. Security — `bundle audit` and Brakeman.
 3. Test — RSpec against Postgres and Redis service containers.
-4. Build — Docker image build (validation only, not published).
+4. Determine the next semantic version from the commit history.
+5. Build the Docker image and tag it with `<version>`, the commit SHA, and `latest`.
+6. Push to the registry.
+7. Create the git tag and GitHub release with generated changelog notes.
 
-**On merge to `main`**
+Steps 4–7 only run when the commits since the last release actually warrant one. A push
+containing nothing but `docs:`, `chore:`, `test:` or `ci:` commits is linted and tested but
+produces no version bump and no image — only `feat:`, `fix:`, `perf:` and breaking changes
+trigger a release.
 
-1. All of the above.
-2. Determine the next semantic version from the commit history.
-3. Build the Docker image and tag it with `<version>`, the commit SHA, and `latest`.
-4. Push to the registry.
-5. Create the git tag and GitHub release with generated changelog notes.
+Because there is no pull-request gate, steps 1–3 are the only thing standing between a
+commit and a released image. A red build on `main` is therefore an immediate fix, not a
+backlog item.
 
 **Registry:** Amazon ECR (assumed, to be confirmed alongside the AWS design).
 
@@ -223,7 +232,8 @@ No AWS resources will be created until this is designed and agreed.
 
 ## Open questions
 
-- Which release automation tool for semantic versioning (`release-please` vs. alternatives)?
+- Which release automation tool for semantic versioning, given the trunk-based workflow
+  rules out the pull-request-driven options?
 - Container registry — ECR, or GitHub Container Registry for simplicity during development?
 - Multi-environment strategy — `staging` and `production`, or production only at first?
 - Ruby version pin and Rails version pin — set during milestone 0.

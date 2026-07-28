@@ -91,9 +91,12 @@ Do not introduce a new framework, database, job runner, or test library without 
 
 **Branches**
 
-- `main` is the default branch and should always be deployable.
-- Feature branches: `feat/<short-description>`, fixes: `fix/<short-description>`.
-- Never commit directly to `main`.
+- **Trunk-based: `main` is the only branch.** Commit directly to it. Do not open feature
+  branches or pull requests unless explicitly asked.
+- `main` must always be deployable. Since there is no PR review gate, the commit itself is
+  the gate — do not push work that leaves the app broken, and run the tests before pushing.
+- Prefer several small, self-contained commits over one large one. Each commit should build
+  and pass its specs on its own.
 
 ## Commands
 
