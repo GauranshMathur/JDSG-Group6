@@ -94,8 +94,9 @@ Recorded so the shape of the system is visible; none are being built yet.
 | N-4.5 | The image builds reproducibly from `web/Dockerfile` | Met |
 | N-4.6 | The image is proven to boot and serve traffic before release | Met — CI starts it and polls `/up` |
 | N-4.7 | Images are tagged with the version, an immutable commit SHA, and `latest` | Met |
-| N-4.8 | Images are published to Amazon ECR | Planned — written and commented out pending AWS setup |
-| N-4.9 | The app is deployed to AWS | Planned |
+| N-4.8 | Images are published to a container registry on release | Met — GitHub Container Registry |
+| N-4.9 | Images are published to Amazon ECR | Planned — written and commented out pending AWS setup |
+| N-4.10 | The app is deployed to AWS | Planned |
 
 ---
 
