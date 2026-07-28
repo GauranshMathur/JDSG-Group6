@@ -1,0 +1,10 @@
+<article class="post" id="<%= dom_id(post) %>">
+  <header class="post__header">
+    <span class="post__author"><%= post.author_name %></span>
+    <time class="post__time" datetime="<%= post.created_at.iso8601 %>">
+      <%= time_ago_in_words(post.created_at) %> ago
+    </time>
+  </header>
+
+  <p class="post__body"><%= post.body %></p>
+</article>

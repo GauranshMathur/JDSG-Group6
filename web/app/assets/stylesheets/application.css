@@ -1,0 +1,164 @@
+/*
+ * Minimal hand-written styling. There is no CSS framework and no build step —
+ * Propshaft serves this file as-is. Keep it small; if it grows past a few
+ * hundred lines, split it per component and revisit that decision.
+ */
+
+:root {
+  --colour-text: #0f1419;
+  --colour-muted: #536471;
+  --colour-border: #eff3f4;
+  --colour-accent: #1d9bf0;
+  --colour-error: #d63638;
+  --colour-surface: #ffffff;
+  --colour-page: #f7f9f9;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --colour-text: #e7e9ea;
+    --colour-muted: #8b98a5;
+    --colour-border: #2f3336;
+    --colour-accent: #1d9bf0;
+    --colour-error: #f4212e;
+    --colour-surface: #16181c;
+    --colour-page: #000000;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  line-height: 1.5;
+  color: var(--colour-text);
+  background: var(--colour-page);
+}
+
+.feed {
+  max-width: 38rem;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 4rem;
+}
+
+.feed__heading {
+  font-size: 1.5rem;
+  margin: 0 0 1rem;
+}
+
+/* Composer */
+
+.composer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  background: var(--colour-surface);
+  border: 1px solid var(--colour-border);
+  border-radius: 0.75rem;
+}
+
+.composer__author,
+.composer__body {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  font: inherit;
+  color: var(--colour-text);
+  background: transparent;
+  border: 1px solid var(--colour-border);
+  border-radius: 0.5rem;
+}
+
+.composer__body {
+  resize: vertical;
+}
+
+.composer__author:focus,
+.composer__body:focus {
+  outline: 2px solid var(--colour-accent);
+  outline-offset: 1px;
+}
+
+.composer__submit {
+  align-self: flex-end;
+  padding: 0.5rem 1.25rem;
+  font: inherit;
+  font-weight: 600;
+  color: #ffffff;
+  background: var(--colour-accent);
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.composer__errors {
+  margin: 0;
+  padding-left: 1.25rem;
+  color: var(--colour-error);
+  font-size: 0.875rem;
+}
+
+/* Timeline */
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.timeline__empty {
+  color: var(--colour-muted);
+  text-align: center;
+  padding: 2rem 0;
+}
+
+.post {
+  padding: 1rem;
+  background: var(--colour-surface);
+  border: 1px solid var(--colour-border);
+  border-radius: 0.75rem;
+}
+
+.post__header {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+  margin-bottom: 0.25rem;
+}
+
+.post__author {
+  font-weight: 600;
+}
+
+.post__time {
+  font-size: 0.8125rem;
+  color: var(--colour-muted);
+}
+
+.post__body {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* Pagination */
+
+.pagination {
+  margin-top: 1.5rem;
+  text-align: center;
+}
+
+.pagination__more {
+  color: var(--colour-accent);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.pagination__more:hover {
+  text-decoration: underline;
+}
