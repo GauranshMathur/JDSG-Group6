@@ -79,7 +79,7 @@ jobs:
       # Dependency and secret scanning over the source tree. These are findings
       # in code we control, so any HIGH or CRITICAL fails the build.
       - name: Trivy filesystem scan
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: fs
           scan-ref: .
@@ -115,7 +115,7 @@ jobs:
       # image are not actionable from this repository — they are fixed by bumping
       # the base image, which is a deliberate change rather than a CI failure.
       - name: Trivy image scan
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: image
           image-ref: twitter-clone-web:${{ github.sha }}
@@ -124,7 +124,7 @@ jobs:
           exit-code: "1"
 
       - name: Trivy image scan (report all severities)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: image
           image-ref: twitter-clone-web:${{ github.sha }}
@@ -169,7 +169,7 @@ jobs:
       # out of scope for this milestone. Triage them, then flip this to true so
       # regressions fail the build.
       - name: OWASP ZAP baseline scan
-        uses: zaproxy/action-baseline@v0.14.0
+        uses: zaproxy/action-baseline@v0.15.0
         with:
           target: http://localhost:3000
           fail_action: false
@@ -212,7 +212,7 @@ jobs:
 
       - name: SonarQube scan
         if: steps.sonar_check.outputs.configured == 'true'
-        uses: SonarSource/sonarqube-scan-action@v4
+        uses: SonarSource/sonarqube-scan-action@v8
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
