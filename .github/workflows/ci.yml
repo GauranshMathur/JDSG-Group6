@@ -78,6 +78,16 @@ jobs:
 
       # Dependency and secret scanning over the source tree. These are findings
       # in code we control, so any HIGH or CRITICAL fails the build.
+      #
+      # web/vendor is skipped because setup-ruby installs gems there at CI time,
+      # and scanning it reports on the *internals of third-party gems* — puma's
+      # own tools/Dockerfile, the railties devcontainer template, lint_roller's
+      # development Gemfile.lock. None of that is our code or reaches our image:
+      # vendor/bundle is not in git, so the Docker build never copies it.
+      #
+      # This does not weaken dependency scanning. Our actual dependencies are
+      # covered twice over — bundler-audit runs against web/Gemfile.lock above,
+      # and Trivy still picks that same lockfile up here.
       - name: Trivy filesystem scan
         uses: aquasecurity/trivy-action@v0.36.0
         with:
@@ -86,6 +96,7 @@ jobs:
           scanners: vuln,secret,misconfig
           severity: CRITICAL,HIGH
           ignore-unfixed: true
+          skip-dirs: web/vendor
           exit-code: "1"
 
   container:
