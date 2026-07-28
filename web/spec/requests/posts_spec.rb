@@ -1,0 +1,122 @@
+require "rails_helper"
+
+RSpec.describe "Posts" do
+  describe "GET /posts" do
+    it "renders the feed" do
+      get posts_path
+
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "shows existing posts" do
+      create(:post, body: "hello world", author_name: "ada")
+
+      get posts_path
+
+      expect(response.body).to include("hello world")
+      expect(response.body).to include("ada")
+    end
+
+    it "shows the empty state when there are no posts" do
+      get posts_path
+
+      expect(response.body).to include("Nothing here yet")
+    end
+
+    it "returns at most one page of posts" do
+      create_list(:post, PostsController::PAGE_SIZE + 5)
+
+      get posts_path
+
+      expect(response.body.scan(/class="post"/).size).to eq(PostsController::PAGE_SIZE)
+    end
+
+    it "offers a load-older link when the timeline is longer than one page" do
+      create_list(:post, PostsController::PAGE_SIZE + 1)
+
+      get posts_path
+
+      expect(response.body).to include("Load older posts")
+    end
+
+    it "omits the load-older link on the last page" do
+      create_list(:post, 3)
+
+      get posts_path
+
+      expect(response.body).not_to include("Load older posts")
+    end
+
+    it "returns older posts when given a cursor" do
+      newest = create(:post, body: "newest", created_at: 1.minute.ago)
+      create(:post, body: "oldest", created_at: 2.minutes.ago)
+
+      get posts_path(after: newest.cursor)
+
+      expect(response.body).to include("oldest")
+      expect(response.body).not_to include("newest")
+    end
+
+    it "falls back to the first page when the cursor is malformed" do
+      create(:post, body: "hello world")
+
+      get posts_path(after: "not-a-cursor")
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("hello world")
+    end
+  end
+
+  describe "POST /posts" do
+    it "creates a post and redirects for an HTML request" do
+      expect {
+        post posts_path, params: { post: { body: "a new post", author_name: "ada" } }
+      }.to change(Post, :count).by(1)
+
+      expect(response).to redirect_to(posts_path)
+    end
+
+    it "responds with a turbo stream that prepends the post" do
+      post posts_path,
+           params: { post: { body: "a new post", author_name: "ada" } },
+           as: :turbo_stream
+
+      expect(response).to have_http_status(:ok)
+      expect(response.media_type).to eq("text/vnd.turbo-stream.html")
+      expect(response.body).to include("a new post")
+      expect(response.body).to include('action="prepend"')
+      expect(response.body).to include('target="timeline"')
+    end
+
+    it "defaults the author name when none is given" do
+      post posts_path, params: { post: { body: "a new post", author_name: "" } }
+
+      expect(Post.last.author_name).to eq(Post::DEFAULT_AUTHOR_NAME)
+    end
+
+    it "rejects an empty body and re-renders the feed" do
+      expect {
+        post posts_path, params: { post: { body: "", author_name: "ada" } }
+      }.not_to change(Post, :count)
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include("Body can&#39;t be blank")
+    end
+
+    it "rejects a body over the length limit" do
+      expect {
+        post posts_path, params: { post: { body: "a" * (Post::MAX_BODY_LENGTH + 1) } }
+      }.not_to change(Post, :count)
+
+      expect(response).to have_http_status(:unprocessable_content)
+    end
+
+    it "still renders the timeline when the submission fails" do
+      create(:post, body: "an existing post")
+
+      post posts_path, params: { post: { body: "" } }
+
+      expect(response.body).to include("an existing post")
+    end
+  end
+end

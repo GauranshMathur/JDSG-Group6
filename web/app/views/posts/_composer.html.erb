@@ -1,0 +1,22 @@
+<%= form_with model: post, id: "composer", class: "composer" do |form| %>
+  <% if post.errors.any? %>
+    <ul class="composer__errors">
+      <% post.errors.full_messages.each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+    </ul>
+  <% end %>
+
+  <%= form.text_field :author_name,
+        class: "composer__author",
+        placeholder: "Your name",
+        maxlength: Post::MAX_AUTHOR_NAME_LENGTH %>
+
+  <%= form.text_area :body,
+        class: "composer__body",
+        placeholder: "What's happening?",
+        rows: 3,
+        maxlength: Post::MAX_BODY_LENGTH %>
+
+  <%= form.submit "Post", class: "composer__submit" %>
+<% end %>

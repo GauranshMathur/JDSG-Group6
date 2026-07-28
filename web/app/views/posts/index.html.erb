@@ -1,0 +1,17 @@
+<% content_for :title, "Feed" %>
+
+<div class="feed">
+  <h1 class="feed__heading">Feed</h1>
+
+  <%= render "posts/composer", post: @post %>
+
+  <div id="timeline" class="timeline">
+    <%= render partial: "posts/post", collection: @posts %>
+
+    <% if @posts.empty? %>
+      <p id="timeline_empty" class="timeline__empty">Nothing here yet. Be the first to post.</p>
+    <% end %>
+  </div>
+
+  <%= render "posts/pagination", next_cursor: @next_cursor %>
+</div>

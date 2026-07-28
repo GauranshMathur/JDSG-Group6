@@ -1,0 +1,5 @@
+<% if next_cursor.present? %>
+  <div class="pagination">
+    <%= link_to "Load older posts", posts_path(after: next_cursor), class: "pagination__more" %>
+  </div>
+<% end %>

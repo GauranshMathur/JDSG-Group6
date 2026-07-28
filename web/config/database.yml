@@ -1,0 +1,39 @@
+# Database configuration.
+#
+# The app runs on SQLite by default so that it needs no services to boot. It is
+# written to be switched to PostgreSQL without editing this file:
+#
+#   1. Install the pg gem:   bundle config set --local with postgres && bundle install
+#   2. Start Postgres:       docker compose -f infra/docker/docker-compose.yml up -d
+#   3. Point the app at it:  export DATABASE_URL=postgres://twitter_clone:twitter_clone@localhost:5432/twitter_clone_development
+#   4. Prepare the schema:   bin/rails db:prepare
+#
+# DATABASE_URL overrides every setting below, adapter included, so no code or
+# config change is needed to move between the two. Migrations use standard Rails
+# column types, which both adapters support.
+#
+# See the "Database" section of the project README for the full switch.
+
+default: &default
+  adapter: <%= ENV.fetch("DATABASE_ADAPTER", "sqlite3") %>
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS", 5) %>
+  timeout: 5000
+  encoding: unicode
+
+development:
+  <<: *default
+  database: <%= ENV.fetch("DATABASE_NAME", "storage/development.sqlite3") %>
+
+# Warning: The database defined as "test" will be erased and
+# re-generated from your development database when you run "rake".
+# Do not set this db to the same as development or production.
+test:
+  <<: *default
+  database: <%= ENV.fetch("DATABASE_NAME", "storage/test.sqlite3") %>
+
+# Production is expected to run on PostgreSQL (RDS) and to be configured entirely
+# through DATABASE_URL. The SQLite fallback below exists only so the container can
+# boot without one; it is not a supported production setup.
+production:
+  <<: *default
+  database: <%= ENV.fetch("DATABASE_NAME", "storage/production.sqlite3") %>

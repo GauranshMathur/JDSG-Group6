@@ -1,0 +1,9 @@
+<%# New posts belong at the head of a reverse-chronological timeline. %>
+<%= turbo_stream.prepend "timeline", partial: "posts/post", locals: { post: @post } %>
+
+<%# Clear the composer by swapping in a fresh one bound to a new record. %>
+<%= turbo_stream.replace "composer", partial: "posts/composer", locals: { post: Post.new } %>
+
+<%# The empty-state message is only rendered while the timeline is empty, and
+    remove is a no-op when the target is absent. %>
+<%= turbo_stream.remove "timeline_empty" %>
