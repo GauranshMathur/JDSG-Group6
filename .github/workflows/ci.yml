@@ -1,11 +1,9 @@
 name: CI
 
-# Both branch names are listed so the pipeline survives the pending rename of the
-# default branch from claude/main to main. Drop the stale one once that happens.
 on:
   pull_request:
   push:
-    branches: [ main, claude/main ]
+    branches: [ main ]
 
 # A new push to a pull request makes the in-flight run obsolete.
 concurrency:
