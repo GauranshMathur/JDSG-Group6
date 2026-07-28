@@ -49,7 +49,7 @@ infra and app code live in one repository from day one, but the AWS design is a 
 | Asset pipeline | Propshaft + importmap | Rails 8 defaults |
 | Testing | RSpec + FactoryBot | |
 | Linting | RuboCop (`rubocop-rails-omakase`) | |
-| Containerization | Docker | Multi-stage build, image published by CI |
+| Containerization | Docker | Multi-stage build, image published to GHCR by CI |
 | IaC | Terraform (planned) | TODO — see [Infrastructure](#infrastructure) |
 | CI/CD | GitHub Actions | Lint, test, SAST, DAST, image scan — see [CI/CD](#cicd) |
 
@@ -279,9 +279,14 @@ polls `/up` until the app answers, so a broken image fails CI rather than a depl
 2. Stop here if nothing warrants a release.
 3. Create the git tag and a GitHub release with generated notes.
 4. Build the image and tag it with the version, `sha-<commit>`, and `latest`.
-5. **Push to Amazon ECR — commented out.** The AWS steps are written and inert. Uncomment
-   them once the ECR repository and the GitHub OIDC role exist; enabling them before that
-   only produces red builds.
+5. Push it to the **GitHub Container Registry** at
+   `ghcr.io/gauranshmathur/twitter-clone-web`.
+
+**Registry: GHCR, for now.** It needs no provisioning — the built-in `GITHUB_TOKEN`
+authenticates the push, so there is no registry to create and no secret to manage. Amazon
+ECR is written into the workflow and commented out; it arrives with the AWS work, at which
+point the image can be pushed to both. Enabling it before the repository and the OIDC role
+exist only produces red builds.
 
 **Image tagging:** every image carries an immutable `sha-<commit>` tag alongside the
 semantic version, so a deployment can always be pinned to an exact build.
@@ -332,6 +337,5 @@ section it belongs to — this is not an append-only log.
 
 **Delivery and infrastructure**
 
-- Container registry — ECR, or GitHub Container Registry for simplicity during development?
 - Multi-environment strategy — `staging` and `production`, or production only at first?
 - Does the SonarQube scan run against SonarCloud or a self-hosted server?

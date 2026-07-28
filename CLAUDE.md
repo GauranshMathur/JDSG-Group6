@@ -139,8 +139,9 @@ scope.
 ## Things to leave alone
 
 - Do not create AWS resources or write Terraform until the architecture is agreed.
-- Do not uncomment the ECR push in `.github/workflows/release.yml` until the ECR repository
-  and the GitHub OIDC role actually exist.
+- Releases publish to GHCR. Do not uncomment the ECR block in
+  `.github/workflows/release.yml` until the ECR repository and the GitHub OIDC role
+  actually exist.
 - Do not add authentication as a side effect of another feature.
 - Do not add Redis, Sidekiq, or a background job until a milestone needs one.
 - Do not upgrade Ruby or Rails major versions without asking.
