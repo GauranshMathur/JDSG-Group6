@@ -12,10 +12,12 @@ A Twitter/X-style social application built with Ruby on Rails, intended to be de
 
 - [Goals](#goals)
 - [Tech stack](#tech-stack)
+- [Design principles](#design-principles)
 - [Repository layout](#repository-layout)
 - [Database](#database)
 - [Roadmap](#roadmap)
 - [Milestone 1 — The Feed](#milestone-1--the-feed)
+- [Milestones 2–6 — the plan](#milestones-26--the-plan)
 - [Getting started](#getting-started)
 - [Versioning and releases](#versioning-and-releases)
 - [CI/CD](#cicd)
@@ -60,6 +62,34 @@ job throughput. Sidekiq is the safer long-term bet even though it means running 
 **Why SQLite first:** the feed has no workload that Postgres serves better, and SQLite means
 a checkout boots with no services running. The switch is a single environment variable, so
 the cost of deferring it is close to zero.
+
+## Design principles
+
+### The 90-9-1 rule
+
+Online communities tend to split roughly 90% lurkers, 9% occasional contributors, 1% heavy
+creators. The app is built for that distribution rather than for the 1% who are easiest to
+imagine:
+
+- **Reading never requires an account.** The feed, profiles and hashtag pages are all public.
+  Requiring sign-up to read would wall off the group that makes up most of the traffic.
+- **Signing in is required only to write.** Authentication guards `create`, `update` and
+  `destroy` — never `index` or `show`.
+- **Posting stays cheap.** The composer is on the feed itself, not behind a separate page, so
+  the occasional contributor is never more than one click from posting.
+- **Power-user tooling comes last, not first.** Managing your own posts in bulk, drafts and
+  scheduling serve the 1%; they are deliberately absent until the other two groups are served.
+
+The practical consequence is a **public global feed plus a personal profile**, not a private
+per-user feed. "Your feed" means the posts you wrote and can manage, not a separate timeline
+only you can see. A personalised timeline needs the follow graph and arrives in milestone 7.
+
+### Ownership over visibility
+
+Everything is readable by everyone; only *writes* are restricted. A post can be edited or
+deleted by its author and nobody else. This is enforced by scoping queries through the
+association — `Current.user.posts.find(params[:id])` — rather than by fetching a record and
+then checking who owns it, so a missing check cannot silently expose someone else's row.
 
 ## Repository layout
 
@@ -130,16 +160,23 @@ reach it, not before.
 | --- | --- | --- |
 | 0 | Repo scaffolding — Rails app in `web/`, Docker, CI | **Done** |
 | 1 | **The feed** — post creation and timeline rendering | **Done** |
-| 2 | Authentication — sign up, sign in, sessions | Not started (next) |
-| 3 | Profiles — user pages, bio, avatar | Not started |
-| 4 | Follows — follow/unfollow, following-only feed | Not started |
-| 5 | Engagement — likes, reposts, replies | Not started |
-| 6 | Media — image uploads on posts | Not started |
-| 7 | Search and hashtags | Not started |
-| 8 | Notifications | Not started |
-| 9 | AWS deployment — Terraform, ECS/Fargate, RDS, ElastiCache | TODO |
+| 2 | **Authentication** — sign up, sign in, sign out, sessions | Next |
+| 3 | **Post ownership and CRUD** — posts belong to users; edit and delete your own | Planned |
+| 4 | **Navigation and profiles** — sidebar shell, profile pages, edit your profile | Planned |
+| 5 | **Hashtags** — parsed from post bodies, browsable tag pages | Planned |
+| 6 | **Search** — find posts and people from the sidebar | Planned |
+| 7 | Follows — follow/unfollow, following-only feed | Later |
+| 8 | Engagement — likes, reposts, replies | Later |
+| 9 | Media — image uploads on posts | Later |
+| 10 | Notifications | Later |
+| 11 | AWS deployment — Terraform, ECS/Fargate, RDS, ElastiCache | TODO |
 
 Milestones 0 and 1 were built together, since a feed needs an app to live in.
+
+Milestones 2–6 are the current block of work: authentication, full CRUD on posts, profiles,
+hashtags and search. They are listed separately rather than as one milestone because each is
+independently shippable, and because a single change touching auth, ownership, navigation,
+tagging and search at once is not reviewable.
 
 ## Milestone 1 — The Feed
 
@@ -170,6 +207,84 @@ What shipped:
 - *Ordering tie-break* — `created_at DESC, id DESC`. Ordering on `created_at` alone is not a
   total order, so posts written in the same tick could swap places between requests and be
   paginated past. The index matches the sort, so it serves both.
+
+## Milestones 2–6 — the plan
+
+Written before any of it is built, so the shape is agreed rather than discovered. Each
+milestone is a pull request or a small series of them, and each ends with the app working.
+
+Requirement IDs referenced here are defined in `REQUIREMENTS.md`.
+
+### Milestone 2 — Authentication (F-2.x)
+
+Rails 8 ships an authentication generator — `bin/rails generate authentication` — which
+produces a `User` model, a `Session` model, sign-in, sign-out and password reset. No gem, no
+Devise. That matches the "boring, conventional Rails" rule, and it is one fewer dependency to
+inherit. See `docs/adr/0001-authentication.md`.
+
+- `User` — email address and `has_secure_password`, unique case-insensitive email.
+- Registration, sign in, sign out. Sessions in a signed cookie backed by a `Session` record,
+  so sign-out can revoke server-side rather than only clearing the browser.
+- `Current.user` for the request-scoped current user.
+- Reading stays public. `require_authentication` guards writes only.
+
+Password reset ships with the generator and needs a mailer. Nothing sends real email yet, so
+delivery stays in `letter_opener`-style development mode and production email is an open
+question below.
+
+### Milestone 3 — Post ownership and CRUD (F-3.x)
+
+The slice that makes posts *belong* to someone.
+
+- `posts.user_id`, indexed, not null, `belongs_to :user`.
+- The existing `author_name` column is removed. Every post is attributed through the
+  association instead.
+- Full CRUD: create, read, update, destroy. Edit and delete are restricted to the author.
+- Authorization by scoping, per the principle above.
+- Composer requires sign-in; signed-out visitors see a prompt instead of the form.
+
+**The existing posts have no user.** The seeded rows are development data, so the migration
+backfills them to a single placeholder account rather than inventing a nullable column that
+would then need defending forever. This is only safe because nothing real is deployed — see
+the open question about it below.
+
+### Milestone 4 — Navigation and profiles (F-4.x)
+
+- A sidebar as the application shell: Feed, Profile, Sign in/out — Search joins it in
+  milestone 6. Rendered from a layout partial, not duplicated per page.
+- `/@username` style public profile pages listing that user's posts.
+- `username` added to `User`: unique, case-insensitive, URL-safe.
+- Edit your own profile — display name and bio. Avatars need file storage, so they wait for
+  the media milestone.
+
+### Milestone 5 — Hashtags (F-5.x)
+
+- `#tag` parsed out of the post body on save.
+- `Tag` and a `PostTag` join table, rather than `LIKE '%#tag%'` — a join gives an indexed
+  lookup, exact matching, and a place to hang tag metadata later. A `LIKE` scan cannot
+  distinguish `#rails` from `#railsconf` without more escaping than it is worth.
+- Hashtags render as links in post bodies.
+- `/tags/:name` lists posts carrying that tag, reusing the existing timeline and cursor
+  pagination.
+- Tags are normalised to lower case on write so `#Rails` and `#rails` are one tag.
+
+### Milestone 6 — Search (F-6.x)
+
+- A search field in the sidebar, covering post bodies and usernames.
+- Results reuse the timeline partial and cursor pagination.
+
+**Search is the first feature where the database actually shows through.** PostgreSQL
+full-text search and SQLite FTS5 are different, adapter-specific mechanisms, and N-1.2 says
+nothing may depend on adapter-specific behaviour. So this milestone ships a plain
+`LIKE`-based search that works identically on both, documented as deliberately basic. Proper
+ranked full-text search is a later, separate decision — taken once the app is actually on
+PostgreSQL, not before.
+
+### Explicitly not in this block
+
+Follows and a following-only timeline, likes, reposts, replies, media and avatars,
+notifications, moderation and rate limiting. Each is a later milestone; none should be
+started "while we're in there".
 
 ## Getting started
 
@@ -368,10 +483,12 @@ No AWS resources will be created until this is designed and agreed.
 Live list. A question gets deleted once it is answered, and the answer moves into whichever
 section it belongs to — this is not an append-only log.
 
-**Product — the feed**
+**Product**
 
-- Should a post be editable after publishing? If so, for how long, and is an edit history
-  shown? Editing interacts with caching and with any future fan-out-on-write timeline.
+- Should an edit be visible as an edit — an "edited" marker, or a history? Milestone 3 allows
+  editing; it does not yet say whether editing is *honest*. A post that can change silently
+  after people have read it is a different thing from one that shows it changed.
+- Is there a time limit on editing, or can a post be rewritten a year later?
 - Should duplicate posts be prevented — for example by hashing the body and rejecting a
   repeat from the same author within some window? Worth deciding what "duplicate" means: the
   exact same text, or normalised for whitespace and case.
@@ -379,10 +496,30 @@ section it belongs to — this is not an append-only log.
   compressed on upload, what quality/size trade-off is acceptable, and are thumbnails
   generated separately from the full-size original? This is the first requirement that needs
   both S3 and background jobs, so it pulls two deferred decisions forward.
-- Should hashtags be parsed out of the body and become browsable, so a tag resolves to a
-  filtered feed? That implies a tags table and a join, not just a `LIKE` search.
+- What happens to someone's posts when they delete their account — cascade, or keep them
+  attributed to a deleted user? Account deletion is deliberately out of scope for now, but
+  the answer shapes the schema before it is needed.
+
+**Authentication**
+
+- How does password reset actually send email in production? The Rails generator ships the
+  flow and a mailer, but nothing is wired to a delivery service. Until that is answered,
+  password reset works in development and silently does nothing in production.
+- Is email verification required before a new account can post? Without it, anyone can sign
+  up as any address. Against that: it is friction on exactly the 9% we want to convert.
+- Is there rate limiting on sign-in attempts? Rails 8 ships `rate_limit`, so this is cheap to
+  add, but it is a decision rather than a default.
+
+**Data**
+
+- The milestone 3 migration backfills existing posts to a placeholder user, which is only
+  acceptable because nothing real is deployed. Confirm that before it runs — once there is
+  production data, a backfill that invents ownership is not reversible.
+- Should `username` be changeable after registration? If yes, profile URLs are not stable and
+  old links break unless historical usernames are retained.
 
 **Delivery and infrastructure**
 
 - Multi-environment strategy — `staging` and `production`, or production only at first?
 - Does the SonarQube scan run against SonarCloud or a self-hosted server?
+- Ranked full-text search, once the app is on PostgreSQL — see milestone 6.
