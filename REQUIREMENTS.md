@@ -1,8 +1,10 @@
 # Requirements
 
-What the application must do, and the constraints it must do it under. Scope and
-sequencing live in `README.md`; this file is the checklist that says whether a
-milestone is actually finished.
+What the application must do, and the constraints it must do it under. Scope and sequencing
+live in [`docs/roadmap.md`](docs/roadmap.md); this file is the checklist that says whether a
+milestone is actually finished. Decisions and their costs are in
+[`docs/adr/`](docs/adr/); questions not yet decided are in
+[`docs/open-questions.md`](docs/open-questions.md).
 
 Each requirement has an ID so specs, commits and issues can point at it.
 

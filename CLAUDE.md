@@ -13,11 +13,19 @@ Gaps that only matter once deployed go in the "Deferred by proof-of-concept scop
 `REQUIREMENTS.md` instead of quietly not existing.
 
 This does not license sloppiness in the things the project is actually exercising: the tests,
-the CI gates and the security scanning stay as they are. See `README.md` for the full plan,
-roadmap, and structure.
+the CI gates and the security scanning stay as they are.
 
-`REQUIREMENTS.md` is the checklist of what the app must do and whether it does it yet.
-Update the status column there when a requirement's state actually changes.
+Where things are written down:
+
+| File | What it holds |
+| --- | --- |
+| `README.md` | What the project is and how to run it. Keep it short — prose belongs in `docs/` |
+| `REQUIREMENTS.md` | Numbered requirements and whether each is met. Update the status when a requirement's state actually changes |
+| `docs/roadmap.md` | Milestones, what shipped, and the plan for the next ones |
+| `docs/design-principles.md` | The 90-9-1 rule, and ownership over visibility |
+| `docs/database.md`, `docs/ci-cd.md`, `docs/infrastructure.md` | The detail for each |
+| `docs/open-questions.md` | Decisions not yet taken, each with why it matters and when it is needed |
+| `docs/adr/` | Decision records — why a choice was made, and what it cost |
 
 **Current state: milestone 1 done, milestones 2–6 planned but not started.** The Rails app
 exists in `web/` and the feed works. There is no authentication yet — posts carry a free-text
@@ -32,10 +40,13 @@ any individual convention below:
   a follow graph, likes, or auth "while we're in there".
 - Prefer finishing one feature end-to-end (migration → model → controller → view → specs)
   over starting several.
-- When a decision is genuinely open, ask rather than guessing. Decisions are recorded in
-  `README.md`; add new ones there or in `docs/` as ADRs.
-- The "Open questions" list in `README.md` is a live list, not an append-only log. When work
-  answers a question, delete it and move the answer into the section it belongs to.
+- When a decision is genuinely open, ask rather than guessing. Add it to
+  `docs/open-questions.md` with why it matters and when it needs answering.
+- A decision with a real alternative and a cost worth remembering gets an ADR in `docs/adr/`.
+  One with no genuine alternative is just a line in the document it affects. An ADR that
+  lists only benefits is marketing — record what the choice cost.
+- `docs/open-questions.md` is a live list, not an append-only log. When work answers a
+  question, delete it and move the answer into the document it belongs to.
 - Anything infrastructure-related is a **TODO** until the AWS design is agreed. Do not write
   Terraform or create cloud resources without an explicit ask.
 
@@ -44,7 +55,7 @@ any individual convention below:
 ```
 web/       Rails application — all app code
 infra/     Terraform, Docker Compose, deploy config
-docs/      Design notes, ADRs, feature specs
+docs/      Everything that is not code — roadmap, decisions, open questions
 .github/   CI/CD workflows
 ```
 
@@ -142,9 +153,9 @@ docker compose -f infra/docker/docker-compose.yml up -d   # Postgres, only when 
 
 ## Current milestone
 
-**Milestone 2 — authentication.** Milestones 2 to 6 are planned in detail in `README.md`
-under "Milestones 2–6 — the plan"; read that and the matching requirement IDs in
-`REQUIREMENTS.md` before starting. Build them in order, one at a time — the plan exists so
+**Milestone 2 — authentication.** Milestones 2 to 6 are planned in detail in
+`docs/roadmap.md`; read that and the matching requirement IDs in `REQUIREMENTS.md` before
+starting. Build them in order, one at a time — the plan exists so
 that a change touching auth, ownership, navigation, tagging and search all at once never gets
 written.
 
@@ -154,8 +165,7 @@ than expanding scope.
 
 Two rules that this block of work depends on:
 
-- **Reading is public; only writing needs an account.** See the 90-9-1 principle in
-  `README.md`. Guard `create`, `update` and `destroy` — never `index` or `show`.
+- **Reading is public; only writing needs an account.** See `docs/design-principles.md`. Guard `create`, `update` and `destroy` — never `index` or `show`.
 - **Authorise by scoping, not by checking.** `Current.user.posts.find(params[:id])`, not
   `Post.find(params[:id])` followed by an ownership comparison. A forgotten comparison
   exposes another user's row; a scope that finds nothing raises.
