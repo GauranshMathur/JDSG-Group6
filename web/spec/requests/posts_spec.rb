@@ -26,7 +26,7 @@ RSpec.describe "Posts" do
     end
 
     it "shows existing posts" do
-      create(:post, body: "hello world", author_name: "ada")
+      create(:post, body: "hello world", user: create(:user, email_address: "ada@example.com"))
 
       get posts_path
 
@@ -101,7 +101,7 @@ RSpec.describe "Posts" do
     context "when signed out" do
       it "refuses to create a post and sends the visitor to sign in" do
         expect {
-          post posts_path, params: { post: { body: "a new post", author_name: "ada" } }
+          post posts_path, params: { post: { body: "a new post" } }
         }.not_to change(Post, :count)
 
         expect(response).to redirect_to(new_session_path)
@@ -109,11 +109,13 @@ RSpec.describe "Posts" do
     end
 
     context "when signed in" do
-      before { sign_in }
+      let(:current_user) { create(:user) }
+
+      before { sign_in(current_user) }
 
       it "creates a post and redirects for an HTML request" do
         expect {
-          post posts_path, params: { post: { body: "a new post", author_name: "ada" } }
+          post posts_path, params: { post: { body: "a new post" } }
         }.to change(Post, :count).by(1)
 
         expect(response).to redirect_to(posts_path)
@@ -121,7 +123,7 @@ RSpec.describe "Posts" do
 
       it "responds with a turbo stream that prepends the post" do
         post posts_path,
-             params: { post: { body: "a new post", author_name: "ada" } },
+             params: { post: { body: "a new post" } },
              as: :turbo_stream
 
         expect(response).to have_http_status(:ok)
@@ -131,15 +133,24 @@ RSpec.describe "Posts" do
         expect(response.body).to include('target="timeline"')
       end
 
-      it "defaults the author name when none is given" do
-        post posts_path, params: { post: { body: "a new post", author_name: "" } }
+      it "attributes the post to the signed-in account" do
+        post posts_path, params: { post: { body: "a new post" } }
 
-        expect(Post.last.author_name).to eq(Post::DEFAULT_AUTHOR_NAME)
+        expect(Post.last.user).to eq(current_user)
+      end
+
+      # Authorship comes from the session, so a supplied user_id must not win.
+      it "ignores a user_id supplied in the parameters" do
+        someone_else = create(:user)
+
+        post posts_path, params: { post: { body: "a new post", user_id: someone_else.id } }
+
+        expect(Post.last.user).to eq(current_user)
       end
 
       it "rejects an empty body and re-renders the feed" do
         expect {
-          post posts_path, params: { post: { body: "", author_name: "ada" } }
+          post posts_path, params: { post: { body: "" } }
         }.not_to change(Post, :count)
 
         expect(response).to have_http_status(:unprocessable_content)

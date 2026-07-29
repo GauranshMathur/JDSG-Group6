@@ -8,8 +8,8 @@ reach it, not before.
 | 0 | Repo scaffolding — Rails app in `web/`, Docker, CI | **Done** |
 | 1 | **The feed** — post creation and timeline rendering | **Done** |
 | 2 | **Authentication** — sign up, sign in, sign out, sessions | **Done** |
-| 3 | **Post ownership and CRUD** — posts belong to users; edit and delete your own | Next |
-| 4 | **Navigation and profiles** — sidebar shell, profile pages, edit your profile | Planned |
+| 3 | **Post ownership and CRUD** — posts belong to users; edit and delete your own | **Done** |
+| 4 | **Navigation and profiles** — sidebar shell, profile pages, edit your profile | Next |
 | 5 | **Hashtags** — parsed from post bodies, browsable tag pages | Planned |
 | 6 | **Search** — find posts and people from the sidebar | Planned |
 | 7 | Follows — follow/unfollow, following-only feed | Later |
@@ -100,7 +100,21 @@ service and nothing will be — this is a proof of concept, so reset works again
 development mailer and is not expected to send anything real. Likewise no email verification
 and no sign-in rate limiting; both are listed under deferred scope below.
 
-### Milestone 3 — Post ownership and CRUD (F-3.x)
+### Milestone 3 — Post ownership and CRUD (F-3.x) — **built**
+
+Per-requirement status is in [`REQUIREMENTS.md`](../REQUIREMENTS.md) (F-3.x). What shipped:
+`posts.user_id` not null with a foreign key, the free-text `author_name` gone, edit and delete
+restricted to the author by scoping, and an "edited" marker on changed posts.
+
+**Two decisions were taken during the milestone** that the plan below did not contain:
+
+- *Posts outlive their author's account, and identities are never reused* — [ADR 0005](adr/0005-posts-outlive-accounts.md).
+  A user row is never destroyed, so a released address can never be claimed by someone who
+  would then inherit the old account's posts.
+- *Authors display as the local part of their email address.* The timeline is public, so
+  publishing full addresses invites scraping. Temporary — milestone 4's username replaces it.
+
+The original plan, unchanged:
 
 The slice that makes posts *belong* to someone.
 

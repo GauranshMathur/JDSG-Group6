@@ -1,3 +1,5 @@
+<%# Authorship comes from the signed-in account, so the composer no longer asks
+    who is posting. %>
 <%= form_with model: post, id: "composer", class: "composer" do |form| %>
   <% if post.errors.any? %>
     <ul class="composer__errors">
@@ -6,11 +8,6 @@
       <% end %>
     </ul>
   <% end %>
-
-  <%= form.text_field :author_name,
-        class: "composer__author",
-        placeholder: "Your name",
-        maxlength: Post::MAX_AUTHOR_NAME_LENGTH %>
 
   <%= form.text_area :body,
         class: "composer__body",

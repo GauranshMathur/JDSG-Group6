@@ -2,8 +2,15 @@ require "rails_helper"
 
 RSpec.describe Post do
   describe "validations" do
-    it "is valid with a body and an author name" do
+    it "is valid with a body and an author" do
       expect(build(:post)).to be_valid
+    end
+
+    it "requires an author" do
+      post = build(:post, user: nil)
+
+      expect(post).not_to be_valid
+      expect(post.errors[:user]).to be_present
     end
 
     it "requires a body" do
@@ -23,24 +30,36 @@ RSpec.describe Post do
     it "accepts a body exactly at the maximum" do
       expect(build(:post, body: "a" * Post::MAX_BODY_LENGTH)).to be_valid
     end
+  end
 
-    it "rejects an author name longer than the maximum" do
-      post = build(:post, author_name: "a" * (Post::MAX_AUTHOR_NAME_LENGTH + 1))
+  describe "#written_by?" do
+    it "is true for the author" do
+      author = create(:user)
 
-      expect(post).not_to be_valid
-      expect(post.errors[:author_name]).to be_present
+      expect(create(:post, user: author).written_by?(author)).to be(true)
+    end
+
+    it "is false for anyone else" do
+      expect(create(:post).written_by?(create(:user))).to be(false)
+    end
+
+    # Called with Current.user in the view, which is nil for a signed-out
+    # visitor. Nil must never look like the author.
+    it "is false for nobody" do
+      expect(create(:post).written_by?(nil)).to be(false)
     end
   end
 
-  describe "default author name" do
-    it "falls back to the default when the author name is blank" do
-      post = create(:post, author_name: "")
-
-      expect(post.author_name).to eq(Post::DEFAULT_AUTHOR_NAME)
+  describe "#edited?" do
+    it "is false for a post that has never been changed" do
+      expect(create(:post)).not_to be_edited
     end
 
-    it "leaves a supplied author name alone" do
-      expect(create(:post, author_name: "ada").author_name).to eq("ada")
+    it "is true once the body has been changed" do
+      post = create(:post, body: "before")
+      travel_to(1.hour.from_now) { post.update!(body: "after") }
+
+      expect(post).to be_edited
     end
   end
 

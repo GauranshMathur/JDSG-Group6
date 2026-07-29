@@ -63,7 +63,6 @@ body {
   border-radius: 0.75rem;
 }
 
-.composer__author,
 .composer__body {
   width: 100%;
   padding: 0.5rem 0.75rem;
@@ -72,13 +71,9 @@ body {
   background: transparent;
   border: 1px solid var(--colour-border);
   border-radius: 0.5rem;
-}
-
-.composer__body {
   resize: vertical;
 }
 
-.composer__author:focus,
 .composer__body:focus {
   outline: 2px solid var(--colour-accent);
   outline-offset: 1px;
@@ -325,4 +320,56 @@ body {
 .composer__prompt {
   margin: 0;
   color: var(--colour-muted);
+}
+
+/* Post actions — only rendered on your own posts */
+
+.post__actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.post__action {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  font-size: 0.8125rem;
+  color: var(--colour-muted);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.post__action:hover {
+  color: var(--colour-accent);
+  text-decoration: underline;
+}
+
+.post__action--danger:hover {
+  color: var(--colour-error);
+}
+
+.composer__row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+.composer__cancel {
+  font-size: 0.875rem;
+  color: var(--colour-muted);
+  text-decoration: none;
+}
+
+.composer__cancel:hover {
+  text-decoration: underline;
+}
+
+.post__edited {
+  font-size: 0.8125rem;
+  color: var(--colour-muted);
+  font-style: italic;
 }
