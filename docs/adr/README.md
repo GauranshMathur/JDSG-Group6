@@ -25,3 +25,4 @@ useful part.
 | [0003](0003-sqlite-first.md) | SQLite first, PostgreSQL later, switchable by env var | Accepted |
 | [0004](0004-hashtags-and-search.md) | Hashtags via a join table; search via `LIKE` | Accepted |
 | [0005](0005-posts-outlive-accounts.md) | Posts outlive their author's account; identities are never reused | Accepted |
+| [0006](0006-immutable-usernames.md) | Usernames are chosen at registration and never change | Accepted |

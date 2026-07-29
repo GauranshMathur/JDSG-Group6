@@ -66,6 +66,7 @@ production-ready, and so the work is visible if it ever is deployed.
 | F-4.3 | A public profile page lists that user's posts, newest first | Planned |
 | F-4.4 | A user can edit their own display name and bio | Planned |
 | F-4.5 | A user cannot edit anyone else's profile | Planned |
+| F-4.6 | A username is fixed at registration — profile URLs never break, and a released name can never be claimed | Planned — [ADR 0006](docs/adr/0006-immutable-usernames.md) |
 
 ### 1.5 Hashtags (milestone 5)
 

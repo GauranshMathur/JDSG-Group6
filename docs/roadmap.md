@@ -133,11 +133,27 @@ backfill that invents ownership would not be acceptable against production data.
 ### Milestone 4 — Navigation and profiles (F-4.x)
 
 - A sidebar as the application shell: Feed, Profile, Sign in/out — Search joins it in
-  milestone 6. Rendered from a layout partial, not duplicated per page.
-- `/@username` style public profile pages listing that user's posts.
-- `username` added to `User`: unique, case-insensitive, URL-safe.
-- Edit your own profile — display name and bio. Avatars need file storage, so they wait for
-  the media milestone.
+  milestone 6. Rendered from a layout partial, not duplicated per page. It replaces the
+  milestone 2 masthead.
+- `username` added to `User`: unique, case-insensitive, URL-safe — lower-case letters,
+  digits and underscores, 3–20 characters. Uniqueness works the way email already does
+  (F-2.2): normalised to lower case on write, enforced by a plain unique index, nothing
+  adapter-specific.
+- **Usernames are chosen at registration and never change** —
+  [ADR 0006](adr/0006-immutable-usernames.md). This is what makes `/@username` a stable URL,
+  and it keeps uniqueness down to one indexed column: were names releasable, a candidate
+  would have to be checked against every name ever held, not just the current ones.
+- Existing users are backfilled from the local part of their email address, deduplicated
+  with a numeric suffix. Same licence as milestone 3's backfill: acceptable precisely
+  because this is development data — inventing usernames for real accounts would not be.
+- `/@username` public profile pages listing that user's posts — the same ordering, cursor
+  pagination and post partial as the feed. Reading one never requires an account (F-2.5).
+- Edit your own profile — display name (≤ 50 characters) and bio (≤ 160). A singular
+  resource acting on the signed-in account: no id in the URL, so a route to anyone else's
+  profile settings does not exist, rather than existing and needing a guard (F-4.5).
+- The display name appears beside `@username` on posts and profiles, falling back to the
+  username when unset. This retires milestone 3's stopgap of showing the email local part.
+- Avatars need file storage, so they wait for the media milestone.
 
 ### Milestone 5 — Hashtags (F-5.x)
 
