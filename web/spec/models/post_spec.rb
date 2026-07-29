@@ -99,5 +99,14 @@ RSpec.describe Post do
       expect(Post.parse_cursor("nonsense")).to be_nil
       expect(Post.parse_cursor("2026-01-01T00:00:00Z,abc")).to be_nil
     end
+
+    # Time.zone.parse returns nil for an unparseable string rather than raising,
+    # so the rescue below it never fires. A [nil, id] pair reaching the query
+    # compares every row against NULL and matches nothing, which showed an empty
+    # feed instead of the first page.
+    it "returns nil when the timestamp is unparseable but the shape is valid" do
+      expect(Post.parse_cursor("garbage,42")).to be_nil
+      expect(Post.parse_cursor("not-a-time,1")).to be_nil
+    end
   end
 end
