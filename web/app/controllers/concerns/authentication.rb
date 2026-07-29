@@ -2,6 +2,13 @@ module Authentication
   extend ActiveSupport::Concern
 
   included do
+    # Resuming is unconditional; only *requiring* a session is skippable.
+    # Public pages still personalise for a signed-in reader — the edit controls
+    # on your own posts, the edit link on your own profile — and without this,
+    # a public action only saw Current.user if its view happened to call
+    # authenticated? before reading it. The profile page read it first and
+    # showed every visitor a stranger's page, owner included.
+    before_action :resume_session
     before_action :require_authentication
     helper_method :authenticated?
   end
