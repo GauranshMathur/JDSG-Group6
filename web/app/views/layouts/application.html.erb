@@ -24,6 +24,23 @@
   </head>
 
   <body>
+    <%# A plain header until milestone 4 replaces it with the sidebar shell. %>
+    <header class="masthead">
+      <%= link_to "Twitter Clone", root_path, class: "masthead__brand" %>
+
+      <nav class="masthead__nav">
+        <% if authenticated? %>
+          <span class="masthead__user"><%= Current.user.email_address %></span>
+          <%= button_to "Sign out", session_path, method: :delete, class: "masthead__link masthead__link--button" %>
+        <% else %>
+          <%= link_to "Sign in", new_session_path, class: "masthead__link" %>
+          <%= link_to "Sign up", new_registration_path, class: "masthead__link" %>
+        <% end %>
+      </nav>
+    </header>
+
+    <%= render "layouts/flash" %>
+
     <%= yield %>
   </body>
 </html>

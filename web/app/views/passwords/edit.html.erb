@@ -1,0 +1,24 @@
+<% content_for :title, "Update password" %>
+
+<div class="auth">
+  <h1 class="auth__heading">Update your password</h1>
+
+  <%= form_with url: password_path(params[:token]), method: :put, class: "auth__form" do |form| %>
+    <%= form.label :password, "New password", class: "auth__label" %>
+    <%= form.password_field :password,
+          class: "auth__input",
+          required: true,
+          autocomplete: "new-password",
+          minlength: User::MINIMUM_PASSWORD_LENGTH,
+          maxlength: 72 %>
+
+    <%= form.label :password_confirmation, "Confirm new password", class: "auth__label" %>
+    <%= form.password_field :password_confirmation,
+          class: "auth__input",
+          required: true,
+          autocomplete: "new-password",
+          maxlength: 72 %>
+
+    <%= form.submit "Save", class: "auth__submit" %>
+  <% end %>
+</div>

@@ -38,13 +38,13 @@ production-ready, and so the work is visible if it ever is deployed.
 
 | ID | Requirement | Status |
 | --- | --- | --- |
-| F-2.1 | A visitor can register with an email address and password | Planned |
-| F-2.2 | Email addresses are unique, case-insensitively | Planned |
-| F-2.3 | A registered user can sign in and sign out | Planned |
-| F-2.4 | Signing out revokes the session server-side, not only in the browser | Planned |
-| F-2.5 | Reading the feed, profiles and tag pages never requires an account | Planned |
-| F-2.6 | Creating, editing and deleting require a signed-in user | Planned |
-| F-2.7 | A user can reset a forgotten password | Planned — against the development mailer only; see N-5.1 |
+| F-2.1 | A visitor can register with an email address and password | Met |
+| F-2.2 | Email addresses are unique, case-insensitively | Met — addresses are normalised to lower case on write, so the plain unique index enforces it without an adapter-specific functional index |
+| F-2.3 | A registered user can sign in and sign out | Met |
+| F-2.4 | Signing out revokes the session server-side, not only in the browser | Met — `terminate_session` destroys the `Session` row |
+| F-2.5 | Reading the feed, profiles and tag pages never requires an account | Met for the feed; profiles and tag pages do not exist yet |
+| F-2.6 | Creating, editing and deleting require a signed-in user | Met for create; edit and delete arrive with milestone 3 |
+| F-2.7 | A user can reset a forgotten password | Met — against the development mailer only; see N-5.1 |
 
 ### 1.3 Post ownership and CRUD (milestone 3)
 
@@ -55,7 +55,7 @@ production-ready, and so the work is visible if it ever is deployed.
 | F-3.3 | A user can delete their own post | Planned |
 | F-3.4 | A user cannot edit or delete anyone else's post | Planned |
 | F-3.5 | Authorisation is enforced by scoping through the association, not by a check after loading | Planned |
-| F-3.6 | A signed-out visitor sees a prompt to sign in where the composer would be | Planned |
+| F-3.6 | A signed-out visitor sees a prompt to sign in where the composer would be | Met — arrived with milestone 2, since guarding `create` without it would have shown a form that only bounced the visitor to sign in |
 
 ### 1.4 Navigation and profiles (milestone 4)
 
@@ -176,9 +176,29 @@ Real answers are needed only if this is ever deployed.
 | --- | --- | --- |
 | N-5.1 | Password reset email reaches a real inbox | Deferred — the flow and mailer exist; no delivery service is configured, so reset sends nothing outside development |
 | N-5.2 | An email address is verified before the account can post | Deferred — an account can be registered against an address its owner does not control |
-| N-5.3 | Sign-in attempts are rate limited | Deferred — Rails 8 ships `rate_limit`, cheap to add when it matters |
+| N-5.3 | Sign-in attempts are rate limited | Met — the generator applies `rate_limit to: 10, within: 3.minutes` to sign-in, password reset and registration. It counts through `Rails.cache`, so the limit is per-process and resets on restart; a shared store is needed before it means anything under more than one instance |
 | N-5.4 | Sessions expire after a period of inactivity | Deferred |
 | N-5.5 | The app is backed up, and restores are tested | Deferred — SQLite in a container volume, no backups |
+
+---
+
+## 2.6 Latency and degradation
+
+How the app behaves when the network between it and its database is slow. Nothing here is
+built; the reasoning and the proposed order are in [`docs/latency.md`](docs/latency.md).
+
+None of this is testable on SQLite, which runs in-process with no wire to slow down, so all of
+it depends on the PostgreSQL path — which is itself an untested claim today (N-1.2, ADR 0003).
+
+| ID | Requirement | Status |
+| --- | --- | --- |
+| N-6.1 | Rendering the feed issues a constant number of queries, regardless of how many posts are on the page | Open — 2 today; milestone 3 introduces the N+1 that would break it |
+| N-6.2 | Query count per request is asserted in specs, so a regression fails the build rather than being noticed as slowness | Open — the cheapest guard, and needs no PostgreSQL |
+| N-6.3 | The connection pool is larger than the Puma thread count | Open — equal when `RAILS_MAX_THREADS` is set, since both read it |
+| N-6.4 | Connection, checkout and statement timeouts are configured and adapter-neutral | Not met — the only timeout set is `timeout: 5000`, which is SQLite's `busy_timeout` and is ignored by PostgreSQL |
+| N-6.5 | A readiness endpoint reports unhealthy when the database is unreachable | Not met — `/up` checks only that the app booted, so it returns 200 against a dead database. Deliberately separate from `/up`, which should not restart the app because a dependency is down |
+| N-6.6 | Behaviour under injected latency is measured and written down — p50/p95, queries per request, errors | Open — proposed harness is Toxiproxy between the app and PostgreSQL containers |
+| N-6.7 | The test suite passes against PostgreSQL, not only SQLite | Not met — no CI job has ever run it |
 
 ---
 

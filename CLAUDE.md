@@ -24,12 +24,14 @@ Where things are written down:
 | `docs/roadmap.md` | Milestones, what shipped, and the plan for the next ones |
 | `docs/design-principles.md` | The 90-9-1 rule, and ownership over visibility |
 | `docs/database.md`, `docs/ci-cd.md`, `docs/infrastructure.md` | The detail for each |
+| `docs/latency.md` | How the app should degrade when the database is slow. Planned, not built — see N-6.x |
 | `docs/open-questions.md` | Decisions not yet taken, each with why it matters and when it is needed |
 | `docs/adr/` | Decision records — why a choice was made, and what it cost |
 
-**Current state: milestone 1 done, milestones 2–6 planned but not started.** The Rails app
-exists in `web/` and the feed works. There is no authentication yet — posts carry a free-text
-author name. No follows, no jobs, no infra.
+**Current state: milestones 1 and 2 done, milestones 3–6 planned but not started.** The Rails
+app exists in `web/`, the feed works, and accounts exist — register, sign in, sign out, reset.
+Posts still carry a free-text author name and do **not** belong to a user; milestone 3 fixes
+that. No follows, no jobs, no infra.
 
 ## How we work here
 
@@ -132,6 +134,21 @@ Do not introduce a new framework, database, job runner, or test library without 
   something a local run would have caught wastes a full pipeline.
 - Prefer several small, self-contained commits over one large one.
 
+**Run it before you push it.** Green specs are not evidence that the app works. Every bug
+that has reached `main` so far passed the suite first: `assume_ssl` returned 422 on every
+POST while GETs stayed healthy; a cursor with an unparseable timestamp rendered an empty feed;
+the sign-out control shipped unstyled because a spec asserting `response.body` includes a
+string cannot see CSS. So for any change that touches a request path or a view:
+
+```bash
+cd web && bin/rails server                # then actually load the page
+script/smoke-test http://localhost:3000   # register, post, read back, sign out
+```
+
+`script/smoke-test` is the same script CI runs, so a CI failure is reproducible in one
+command rather than by pushing again. When a change is visual, take a screenshot and put it
+in the pull request — describing a layout is not the same as looking at it.
+
 ## Commands
 
 ```bash
@@ -145,6 +162,7 @@ bundle exec brakeman         # Security static analysis
 bin/rails db:migrate         # Apply migrations
 bin/rails db:seed            # Sample posts for the feed
 bin/rails console            # REPL
+script/smoke-test            # End-to-end checks over HTTP against localhost:3000
 
 # From repo root
 docker build -t twitter-clone-web web                     # Build the image
@@ -153,7 +171,7 @@ docker compose -f infra/docker/docker-compose.yml up -d   # Postgres, only when 
 
 ## Current milestone
 
-**Milestone 2 — authentication.** Milestones 2 to 6 are planned in detail in
+**Milestone 3 — post ownership and CRUD.** Milestones 3 to 6 are planned in detail in
 `docs/roadmap.md`; read that and the matching requirement IDs in `REQUIREMENTS.md` before
 starting. Build them in order, one at a time — the plan exists so
 that a change touching auth, ownership, navigation, tagging and search all at once never gets

@@ -2,10 +2,27 @@ require "rails_helper"
 
 RSpec.describe "Posts" do
   describe "GET /posts" do
+    # F-2.5. The timeline is readable without an account, which is the 90 in the
+    # 90-9-1 rule — see docs/design-principles.md.
     it "renders the feed" do
       get posts_path
 
       expect(response).to have_http_status(:ok)
+    end
+
+    it "shows a signed-out visitor a prompt instead of the composer" do
+      get posts_path
+
+      expect(response.body).to include("to post.")
+      expect(response.body).not_to include("What&#39;s happening?")
+    end
+
+    it "shows a signed-in user the composer" do
+      sign_in
+
+      get posts_path
+
+      expect(response.body).to include("What&#39;s happening?")
     end
 
     it "shows existing posts" do
@@ -80,55 +97,70 @@ RSpec.describe "Posts" do
   end
 
   describe "POST /posts" do
-    it "creates a post and redirects for an HTML request" do
-      expect {
-        post posts_path, params: { post: { body: "a new post", author_name: "ada" } }
-      }.to change(Post, :count).by(1)
+    # F-2.6. Writing needs an account; F-2.5 keeps reading open to everyone.
+    context "when signed out" do
+      it "refuses to create a post and sends the visitor to sign in" do
+        expect {
+          post posts_path, params: { post: { body: "a new post", author_name: "ada" } }
+        }.not_to change(Post, :count)
 
-      expect(response).to redirect_to(posts_path)
+        expect(response).to redirect_to(new_session_path)
+      end
     end
 
-    it "responds with a turbo stream that prepends the post" do
-      post posts_path,
-           params: { post: { body: "a new post", author_name: "ada" } },
-           as: :turbo_stream
+    context "when signed in" do
+      before { sign_in }
 
-      expect(response).to have_http_status(:ok)
-      expect(response.media_type).to eq("text/vnd.turbo-stream.html")
-      expect(response.body).to include("a new post")
-      expect(response.body).to include('action="prepend"')
-      expect(response.body).to include('target="timeline"')
-    end
+      it "creates a post and redirects for an HTML request" do
+        expect {
+          post posts_path, params: { post: { body: "a new post", author_name: "ada" } }
+        }.to change(Post, :count).by(1)
 
-    it "defaults the author name when none is given" do
-      post posts_path, params: { post: { body: "a new post", author_name: "" } }
+        expect(response).to redirect_to(posts_path)
+      end
 
-      expect(Post.last.author_name).to eq(Post::DEFAULT_AUTHOR_NAME)
-    end
+      it "responds with a turbo stream that prepends the post" do
+        post posts_path,
+             params: { post: { body: "a new post", author_name: "ada" } },
+             as: :turbo_stream
 
-    it "rejects an empty body and re-renders the feed" do
-      expect {
-        post posts_path, params: { post: { body: "", author_name: "ada" } }
-      }.not_to change(Post, :count)
+        expect(response).to have_http_status(:ok)
+        expect(response.media_type).to eq("text/vnd.turbo-stream.html")
+        expect(response.body).to include("a new post")
+        expect(response.body).to include('action="prepend"')
+        expect(response.body).to include('target="timeline"')
+      end
 
-      expect(response).to have_http_status(:unprocessable_content)
-      expect(response.body).to include("Body can&#39;t be blank")
-    end
+      it "defaults the author name when none is given" do
+        post posts_path, params: { post: { body: "a new post", author_name: "" } }
 
-    it "rejects a body over the length limit" do
-      expect {
-        post posts_path, params: { post: { body: "a" * (Post::MAX_BODY_LENGTH + 1) } }
-      }.not_to change(Post, :count)
+        expect(Post.last.author_name).to eq(Post::DEFAULT_AUTHOR_NAME)
+      end
 
-      expect(response).to have_http_status(:unprocessable_content)
-    end
+      it "rejects an empty body and re-renders the feed" do
+        expect {
+          post posts_path, params: { post: { body: "", author_name: "ada" } }
+        }.not_to change(Post, :count)
 
-    it "still renders the timeline when the submission fails" do
-      create(:post, body: "an existing post")
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.body).to include("Body can&#39;t be blank")
+      end
 
-      post posts_path, params: { post: { body: "" } }
+      it "rejects a body over the length limit" do
+        expect {
+          post posts_path, params: { post: { body: "a" * (Post::MAX_BODY_LENGTH + 1) } }
+        }.not_to change(Post, :count)
 
-      expect(response.body).to include("an existing post")
+        expect(response).to have_http_status(:unprocessable_content)
+      end
+
+      it "still renders the timeline when the submission fails" do
+        create(:post, body: "an existing post")
+
+        post posts_path, params: { post: { body: "" } }
+
+        expect(response.body).to include("an existing post")
+      end
     end
   end
 end

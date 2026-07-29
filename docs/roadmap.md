@@ -7,8 +7,8 @@ reach it, not before.
 | --- | --- | --- |
 | 0 | Repo scaffolding — Rails app in `web/`, Docker, CI | **Done** |
 | 1 | **The feed** — post creation and timeline rendering | **Done** |
-| 2 | **Authentication** — sign up, sign in, sign out, sessions | Next |
-| 3 | **Post ownership and CRUD** — posts belong to users; edit and delete your own | Planned |
+| 2 | **Authentication** — sign up, sign in, sign out, sessions | **Done** |
+| 3 | **Post ownership and CRUD** — posts belong to users; edit and delete your own | Next |
 | 4 | **Navigation and profiles** — sidebar shell, profile pages, edit your profile | Planned |
 | 5 | **Hashtags** — parsed from post bodies, browsable tag pages | Planned |
 | 6 | **Search** — find posts and people from the sidebar | Planned |
@@ -62,7 +62,27 @@ milestone is a pull request or a small series of them, and each ends with the ap
 
 Requirement IDs referenced here are defined in [`REQUIREMENTS.md`](../REQUIREMENTS.md).
 
-### Milestone 2 — Authentication (F-2.x)
+### Milestone 2 — Authentication (F-2.x) — **built**
+
+Per-requirement status is in [`REQUIREMENTS.md`](../REQUIREMENTS.md) (F-2.x). What shipped:
+
+- `User` with `has_secure_password`, and `Session` rows behind a signed cookie.
+- Registration (ours), sign in, sign out and password reset (the generator's).
+- `Current.user`, and `allow_unauthenticated_access only: :index` on the feed.
+- A signed-out visitor reads the timeline and sees a sign-in prompt where the composer would
+  be. This was written down as F-3.6 for milestone 3, but guarding `create` without it would
+  have shown a form whose only effect was to bounce you to sign in.
+- A plain masthead with sign in / sign up / sign out, replaced by the sidebar in milestone 4.
+- 36 new specs, and one behaviour worth naming: sign-out is asserted to destroy the `Session`
+  row, not just clear the cookie.
+
+**Two things landed that the plan below did not expect.** The generator applies `rate_limit`
+to sign-in and password reset, so N-5.3 moved from deferred to met without being asked for —
+though it counts through `Rails.cache`, which is per-process here. And posts still carry a
+free-text `author_name` while now requiring an account to write, which is an odd pairing:
+you must sign in, then type whatever name you like. Milestone 3 removes the column.
+
+The original plan, unchanged:
 
 Rails 8 ships an authentication generator — `bin/rails generate authentication` — which
 produces a `User` model, a `Session` model, sign-in, sign-out and password reset. No gem, no

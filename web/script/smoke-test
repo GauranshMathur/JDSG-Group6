@@ -1,0 +1,119 @@
+#!/usr/bin/env bash
+#
+# End-to-end smoke test against a running instance, over real HTTP.
+#
+# The same script runs locally and in CI, so a failure here can always be
+# reproduced without pushing:
+#
+#   script/smoke-test                       # against http://localhost:3000
+#   script/smoke-test http://localhost:3100 # against somewhere else
+#
+# This exists because the request specs cannot catch everything the real stack
+# does. Milestone 1 shipped a bug where every POST returned 422 — the specs
+# passed, because `assume_ssl` only misbehaves over real HTTP with a real
+# Origin header. Anything asserted here is asserted against the actual server.
+set -euo pipefail
+
+BASE="${1:-http://localhost:3000}"
+MARKER="smoke-$(date +%s)-$RANDOM"
+EMAIL="smoke-$(date +%s)-$RANDOM@example.com"
+PASSWORD="smoke-test-password"
+COOKIES="$(mktemp)"
+trap 'rm -f "$COOKIES"' EXIT
+
+fail() {
+  echo "FAIL: $1"
+  [ $# -gt 1 ] && head -c 2000 "$2"
+  exit 1
+}
+
+pass() { echo "PASS: $1"; }
+
+# Reads the page-wide CSRF token from the <meta> tag, which is what Turbo and
+# rails-ujs use and which Rails accepts for any action.
+#
+# Deliberately NOT the first authenticity_token input on the page: Rails issues
+# per-form tokens scoped to the form's action and method, and since the masthead
+# arrived the first form on the feed is sign-out, whose token is only valid for
+# DELETE /session. Scraping that and posting it to /posts gets a 422.
+token_from() {
+  grep -oE '<meta name="csrf-token" content="[^"]+"' "$1" \
+    | head -1 | sed 's/.*content="//; s/"$//'
+}
+
+echo "Smoke testing $BASE"
+
+# --- Reading is public (F-2.5) ------------------------------------------------
+
+curl -sS "$BASE/" -o /tmp/smoke-feed-anon
+grep -q "Feed" /tmp/smoke-feed-anon || fail "the feed did not render for a signed-out visitor" /tmp/smoke-feed-anon
+pass "signed-out visitor can read the feed"
+
+grep -q "to post." /tmp/smoke-feed-anon || fail "signed-out visitor was not shown a sign-in prompt" /tmp/smoke-feed-anon
+pass "signed-out visitor sees a sign-in prompt instead of the composer"
+
+# --- Writing is guarded (F-2.6) -----------------------------------------------
+
+anon_status=$(curl -sS -o /dev/null -w '%{http_code}' \
+  -X POST "$BASE/posts" \
+  --data-urlencode "post[body]=should-not-exist-$MARKER")
+[ "$anon_status" = "200" ] && fail "a signed-out POST /posts returned 200; writing is not guarded"
+pass "signed-out posting refused with HTTP $anon_status"
+
+# --- Registration (F-2.1) -----------------------------------------------------
+
+curl -sS -c "$COOKIES" "$BASE/registration/new" -o /tmp/smoke-signup
+signup_token=$(token_from /tmp/smoke-signup)
+[ -z "$signup_token" ] && fail "no CSRF token on the sign-up page" /tmp/smoke-signup
+
+reg_status=$(curl -sS -b "$COOKIES" -c "$COOKIES" -o /tmp/smoke-register \
+  -w '%{http_code}' -X POST "$BASE/registration" \
+  --data-urlencode "authenticity_token=$signup_token" \
+  --data-urlencode "user[email_address]=$EMAIL" \
+  --data-urlencode "user[password]=$PASSWORD" \
+  --data-urlencode "user[password_confirmation]=$PASSWORD")
+[ "$reg_status" != "302" ] && fail "registering returned HTTP $reg_status, expected 302" /tmp/smoke-register
+pass "registered an account"
+
+curl -sS -b "$COOKIES" -c "$COOKIES" "$BASE/" -o /tmp/smoke-feed
+grep -q "$EMAIL" /tmp/smoke-feed || fail "the feed does not show the new account as signed in" /tmp/smoke-feed
+pass "registration signed the account in"
+
+# --- Posting while signed in --------------------------------------------------
+
+token=$(token_from /tmp/smoke-feed)
+[ -z "$token" ] && fail "no CSRF token on the feed page while signed in" /tmp/smoke-feed
+
+status=$(curl -sS -b "$COOKIES" -c "$COOKIES" -o /tmp/smoke-post \
+  -w '%{http_code}' -X POST "$BASE/posts" \
+  -H 'Accept: text/vnd.turbo-stream.html' \
+  --data-urlencode "authenticity_token=$token" \
+  --data-urlencode "post[author_name]=smoke" \
+  --data-urlencode "post[body]=$MARKER")
+[ "$status" != "200" ] && fail "creating a post returned HTTP $status, expected 200" /tmp/smoke-post
+
+grep -q 'turbo-stream action="prepend"' /tmp/smoke-post \
+  || fail "the response was not a turbo stream that prepends the post" /tmp/smoke-post
+pass "signed-in user posted, and got a turbo stream back"
+
+# Read back signed out, since the timeline is public — this proves the post was
+# persisted rather than merely echoed into the response.
+curl -sS "$BASE/" | grep -q "$MARKER" \
+  || fail "the new post is not on the feed after reloading it"
+pass "the post survives a round trip and is visible to everyone"
+
+# --- Sign out revokes the session (F-2.4) -------------------------------------
+
+signout_token=$(token_from /tmp/smoke-feed)
+curl -sS -b "$COOKIES" -c "$COOKIES" -o /dev/null \
+  -X POST "$BASE/session" \
+  --data-urlencode "authenticity_token=$signout_token" \
+  --data-urlencode "_method=delete"
+
+curl -sS -b "$COOKIES" "$BASE/" -o /tmp/smoke-feed-after
+grep -q "to post." /tmp/smoke-feed-after \
+  || fail "still signed in after signing out" /tmp/smoke-feed-after
+pass "signing out returns the visitor to the signed-out feed"
+
+echo
+echo "All smoke checks passed against $BASE"
