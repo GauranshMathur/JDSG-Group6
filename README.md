@@ -385,6 +385,25 @@ GitHub Actions, in two workflows.
 
 ### `ci.yml` — pull requests only
 
+A **Detect changes** job runs first and classifies the pull request. If nothing outside
+documentation changed — only `*.md`, `docs/**` or `LICENSE` — then lint, the specs, the
+container build and SonarQube are all skipped. A documentation change cannot break RuboCop or
+stop the image booting, so building and scanning one costs minutes to learn nothing.
+
+Two deliberate details:
+
+- **The SAST job still runs.** Its Ruby-specific analysis is skipped, but the Trivy scan is
+  not: it also looks for committed secrets, and a credential pasted into a markdown file is
+  every bit as leaked as one in a Ruby file.
+- **The filtering is per job, not `paths-ignore` on the trigger.** This matters once `main`
+  has required status checks. A workflow skipped by `paths-ignore` never reports its checks
+  at all, so the pull request waits forever for a result that will never arrive. A job
+  skipped by an `if` reports a `skipped` conclusion, which satisfies the requirement.
+
+Anything that is not documentation counts as code. Deciding it that way round means a file
+type nobody anticipated is treated as code and gets checked, rather than slipping through.
+
+
 All work reaches the default branch through a pull request, and a pull request merges only
 once these pass. Jobs run in parallel:
 
