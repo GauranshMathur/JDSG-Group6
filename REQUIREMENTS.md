@@ -82,6 +82,7 @@ Recorded so the shape of the system is visible; none are being built yet.
 | N-3.8 | User-supplied content is escaped on output | Met — ERB escapes by default |
 | N-3.9 | Secrets are never committed; Trivy scans for them | Met |
 | N-3.10 | The base image is kept current, since inherited CVEs fail the build like any other | Met |
+| N-3.11 | SSL is enforced wherever the app is served over TLS — HSTS, https redirect, secure cookies | **Planned — `RAILS_FORCE_SSL` and `RAILS_ASSUME_SSL` default to off so the image runs over plain HTTP locally. Both must be set to `true` in any deployed environment.** |
 
 ### 2.4 Delivery
 
