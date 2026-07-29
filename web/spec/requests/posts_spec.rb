@@ -65,6 +65,18 @@ RSpec.describe "Posts" do
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("hello world")
     end
+
+    # "not-a-cursor" above has no comma, so it is rejected before the timestamp
+    # is ever parsed. This one has the right shape and an unparseable timestamp,
+    # which is the case that used to render an empty feed.
+    it "falls back to the first page when only the cursor timestamp is malformed" do
+      create(:post, body: "hello world")
+
+      get posts_path(after: "garbage,42")
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("hello world")
+    end
   end
 
   describe "POST /posts" do

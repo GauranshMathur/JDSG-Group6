@@ -32,13 +32,21 @@ class Post < ApplicationRecord
 
   # Parses a cursor back into its parts, returning nil for anything malformed so
   # that a bad ?after= param falls back to the first page rather than erroring.
+  #
+  # Time.zone.parse returns nil for an unparseable string instead of raising, so
+  # the rescue below does not catch it. Letting that nil through would compare
+  # every row against NULL in older_than, match nothing, and render an empty
+  # feed — which is worse than the error it was meant to avoid.
   def self.parse_cursor(value)
     return nil if value.blank?
 
     created_at, id = value.split(",", 2)
     return nil if created_at.blank? || id.blank?
 
-    [ Time.zone.parse(created_at), Integer(id) ]
+    parsed_created_at = Time.zone.parse(created_at)
+    return nil if parsed_created_at.nil?
+
+    [ parsed_created_at, Integer(id) ]
   rescue ArgumentError, TypeError
     nil
   end
