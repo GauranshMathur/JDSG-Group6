@@ -118,6 +118,14 @@ the release will ship it.
 **When:** now. This is configuration rather than work — see N-4.2 and N-4.2a in
 [`REQUIREMENTS.md`](../REQUIREMENTS.md).
 
+**One trap when enabling them.** The checks to require are the six job names — `Detect
+changes`, `Lint`, `Test`, `SAST`, `Container build, image scan and DAST`, `SonarQube` — all of
+which report `skipped` rather than nothing when gated off, which satisfies a requirement.
+`Trivy` is *not* a job: it is a code-scanning check created by the SARIF upload. It now reports
+on every pull request, but only because the filesystem scan uploads from the SAST job, which is
+never skipped. If that upload is ever removed, requiring `Trivy` would leave every docs-only
+pull request waiting forever.
+
 ### Should the DAST scan fail the build?
 
 The ZAP baseline scan runs and reports; `fail_action` is `false`.

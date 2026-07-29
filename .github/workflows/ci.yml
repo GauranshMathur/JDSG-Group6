@@ -166,6 +166,39 @@ jobs:
           skip-dirs: web/vendor
           exit-code: "1"
 
+      # The gating scan above only sets an exit code — its findings went nowhere.
+      # This second pass reports every severity into the Security tab, the same
+      # split the image scan uses: one scan decides pass or fail, the other is
+      # the record.
+      #
+      # always(), so a failing gate publishes what it found rather than hiding
+      # it. A scan that fails the build without saying why is the least useful
+      # of the two halves.
+      - name: Trivy filesystem scan (report all severities)
+        if: always()
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,secret,misconfig
+          format: sarif
+          output: trivy-fs.sarif
+          ignore-unfixed: true
+          skip-dirs: web/vendor
+          exit-code: "0"
+
+      # This job is not gated on code changes, so uploading here is also what
+      # makes the code-scanning check report on *every* pull request. Before
+      # this, the only upload was in the container job, which a docs-only pull
+      # request skips — so the "Trivy" check was never created, and GitHub left
+      # it listed as expected and waiting for a status that was never coming.
+      - name: Upload filesystem scan results
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-fs.sarif
+          category: trivy-fs
+
   container:
     name: Container build, image scan and DAST
     needs: changes
