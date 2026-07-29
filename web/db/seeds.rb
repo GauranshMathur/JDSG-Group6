@@ -16,6 +16,7 @@ SAMPLE_POSTS = [
 
 authors = SAMPLE_POSTS.map(&:first).uniq.to_h do |name|
   user = User.find_or_create_by!(email_address: "#{name}@example.com") do |u|
+    u.username = name
     u.password = SAMPLE_PASSWORD
   end
   [ name, user ]

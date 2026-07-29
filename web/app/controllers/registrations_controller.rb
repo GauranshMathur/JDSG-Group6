@@ -25,6 +25,8 @@ class RegistrationsController < ApplicationController
   private
 
   def registration_params
-    params.require(:user).permit(:email_address, :password, :password_confirmation)
+    # The only place :username is ever permitted — it is fixed at registration
+    # (ADR 0006), and the model raises if anything assigns it afterwards.
+    params.require(:user).permit(:username, :email_address, :password, :password_confirmation)
   end
 end

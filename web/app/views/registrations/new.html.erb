@@ -12,11 +12,25 @@
       </ul>
     <% end %>
 
+    <%= form.label :username, "Username", class: "auth__label" %>
+    <%= form.text_field :username,
+          class: "auth__input",
+          required: true,
+          autofocus: true,
+          minlength: 3,
+          maxlength: 20,
+          pattern: "[A-Za-z0-9_]+",
+          autocomplete: "off",
+          spellcheck: false %>
+    <p class="auth__hint">
+      Letters, numbers and underscores. This becomes your profile address —
+      and it can't be changed later.
+    </p>
+
     <%= form.label :email_address, "Email address", class: "auth__label" %>
     <%= form.email_field :email_address,
           class: "auth__input",
           required: true,
-          autofocus: true,
           autocomplete: "username" %>
 
     <%= form.label :password, "Password", class: "auth__label" %>
