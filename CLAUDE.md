@@ -4,14 +4,24 @@ Guidance for Claude Code when working in this repository.
 
 ## What this project is
 
-A Twitter/X-style social application, built with Ruby on Rails, eventually deployed to AWS.
-See `README.md` for the full plan, roadmap, and structure.
+A Twitter/X-style social application, built with Ruby on Rails.
+
+**It is a proof of concept.** Nothing is deployed and nothing holds real data. Where a
+decision trades production robustness for something working and understandable, take the
+second — and say so at the point you take it, rather than leaving it to be discovered.
+Gaps that only matter once deployed go in the "Deferred by proof-of-concept scope" table in
+`REQUIREMENTS.md` instead of quietly not existing.
+
+This does not license sloppiness in the things the project is actually exercising: the tests,
+the CI gates and the security scanning stay as they are. See `README.md` for the full plan,
+roadmap, and structure.
 
 `REQUIREMENTS.md` is the checklist of what the app must do and whether it does it yet.
 Update the status column there when a requirement's state actually changes.
 
-**Current state: milestone 1 done.** The Rails app exists in `web/` and the feed works.
-Nothing else is built — no auth, no follows, no jobs, no infra.
+**Current state: milestone 1 done, milestones 2–6 planned but not started.** The Rails app
+exists in `web/` and the feed works. There is no authentication yet — posts carry a free-text
+author name. No follows, no jobs, no infra.
 
 ## How we work here
 
@@ -101,8 +111,12 @@ Do not introduce a new framework, database, job runner, or test library without 
 - All work reaches the default branch through a **pull request**. Do not commit to it
   directly.
 - Branch names: `feat/<short-description>`, `fix/<short-description>`, `docs/<...>`.
-- Pull requests are set to auto-merge, so CI is the review gate. A green pipeline merges the
-  branch — never open one expecting to fix it up afterwards.
+- CI is the review gate: a pull request is ready when the pipeline is green, so never open
+  one expecting to fix it up afterwards.
+- Auto-merge is enabled on the repository but **does not currently gate anything** — `main`
+  has no required status checks, so GitHub treats every pull request as immediately
+  mergeable and refuses to arm it. Merges are manual until a branch ruleset exists. Do not
+  merge on a red or still-running pipeline just because GitHub allows it.
 - Run `bundle exec rspec` and `bundle exec rubocop` locally before pushing. CI failing on
   something a local run would have caught wastes a full pipeline.
 - Prefer several small, self-contained commits over one large one.
@@ -128,13 +142,23 @@ docker compose -f infra/docker/docker-compose.yml up -d   # Postgres, only when 
 
 ## Current milestone
 
-**Milestone 1 (the feed) is done.** Milestone 2 — authentication — is next but not started.
-Read the roadmap in `README.md` before starting work and keep changes inside the milestone
-being worked on.
+**Milestone 2 — authentication.** Milestones 2 to 6 are planned in detail in `README.md`
+under "Milestones 2–6 — the plan"; read that and the matching requirement IDs in
+`REQUIREMENTS.md` before starting. Build them in order, one at a time — the plan exists so
+that a change touching auth, ownership, navigation, tagging and search all at once never gets
+written.
 
-Anything outside it — follows, likes, replies, media, search, notifications — is a later
-milestone. If a task seems to require one of them, say so and ask rather than expanding
-scope.
+Anything outside the current milestone — follows, likes, replies, media, notifications,
+account deletion — is later. If a task seems to require one of them, say so and ask rather
+than expanding scope.
+
+Two rules that this block of work depends on:
+
+- **Reading is public; only writing needs an account.** See the 90-9-1 principle in
+  `README.md`. Guard `create`, `update` and `destroy` — never `index` or `show`.
+- **Authorise by scoping, not by checking.** `Current.user.posts.find(params[:id])`, not
+  `Post.find(params[:id])` followed by an ownership comparison. A forgotten comparison
+  exposes another user's row; a scope that finds nothing raises.
 
 ## Things to leave alone
 
