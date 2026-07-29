@@ -20,8 +20,61 @@ permissions:
   contents: read
 
 jobs:
+  # Which of the jobs below are worth running for this pull request.
+  #
+  # A documentation change cannot break RuboCop, the specs or the container, so
+  # building and scanning an image for it is minutes spent to learn nothing.
+  #
+  # This is filtered per job rather than with paths-ignore on the trigger, and the
+  # difference matters once main has required status checks: a workflow skipped by
+  # paths-ignore never reports its checks at all, so the pull request waits forever
+  # for a result that will never arrive. A job skipped by an `if` reports a
+  # "skipped" conclusion, which satisfies the requirement.
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Both ends of the comparison have to be present locally.
+          fetch-depth: 0
+
+      - name: Classify the changed files
+        id: filter
+        run: |
+          set -euo pipefail
+
+          changed=$(git diff --name-only \
+            "${{ github.event.pull_request.base.sha }}" \
+            "${{ github.event.pull_request.head.sha }}")
+
+          echo "Changed files:"
+          echo "$changed" | sed 's/^/  /'
+
+          # Anything that is not documentation counts as code. Deciding it this way
+          # round is deliberate: a new file type nobody thought about is treated as
+          # code and gets checked, rather than slipping through unchecked.
+          if [ -z "$changed" ]; then
+            code=false
+          elif echo "$changed" | grep -qvE '(\.md$|^docs/|^LICENSE$)'; then
+            code=true
+          else
+            code=false
+          fi
+
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          if [ "$code" = "true" ]; then
+            echo "::notice::Code changed — running the full pipeline."
+          else
+            echo "::notice::Documentation only — skipping lint, tests and the container build."
+          fi
+
   lint:
     name: Lint
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -37,6 +90,8 @@ jobs:
 
   test:
     name: Test
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -53,8 +108,13 @@ jobs:
           RAILS_ENV: test
         run: bundle exec rspec --format documentation
 
+  # This job always runs, unlike the others. The Ruby-specific analysis below is
+  # skipped for a documentation-only change, but the Trivy scan is not: it also
+  # looks for committed secrets, and a credential pasted into a markdown file is
+  # every bit as leaked as one in a Ruby file.
   sast:
     name: SAST
+    needs: changes
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -63,6 +123,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: ruby/setup-ruby@v1
+        if: needs.changes.outputs.code == 'true'
         with:
           working-directory: web
           bundler-cache: true
@@ -70,11 +131,13 @@ jobs:
       # Rails-aware static analysis: SQL injection, mass assignment, unsafe
       # redirects, XSS.
       - name: Brakeman
+        if: needs.changes.outputs.code == 'true'
         working-directory: web
         run: bundle exec brakeman --no-pager --format plain
 
       # Known CVEs in the locked gem versions.
       - name: Bundler Audit
+        if: needs.changes.outputs.code == 'true'
         working-directory: web
         run: |
           bundle exec bundler-audit update
@@ -105,6 +168,8 @@ jobs:
 
   container:
     name: Container build, image scan and DAST
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -264,6 +329,8 @@ jobs:
 
   sonarqube:
     name: SonarQube
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
