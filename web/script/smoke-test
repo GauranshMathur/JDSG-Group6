@@ -17,6 +17,9 @@ set -euo pipefail
 BASE="${1:-http://localhost:3000}"
 MARKER="smoke-$(date +%s)-$RANDOM"
 EMAIL="smoke-$(date +%s)-$RANDOM@example.com"
+# Letters, digits and underscores only, and at most 20 characters — the
+# username rules are stricter than the email's.
+USERNAME="s$(date +%s)$RANDOM"
 PASSWORD="smoke-test-password"
 COOKIES="$(mktemp)"
 trap 'rm -f "$COOKIES"' EXIT
@@ -69,14 +72,17 @@ signup_token=$(token_from /tmp/smoke-signup)
 reg_status=$(curl -sS -b "$COOKIES" -c "$COOKIES" -o /tmp/smoke-register \
   -w '%{http_code}' -X POST "$BASE/registration" \
   --data-urlencode "authenticity_token=$signup_token" \
+  --data-urlencode "user[username]=$USERNAME" \
   --data-urlencode "user[email_address]=$EMAIL" \
   --data-urlencode "user[password]=$PASSWORD" \
   --data-urlencode "user[password_confirmation]=$PASSWORD")
 [ "$reg_status" != "302" ] && fail "registering returned HTTP $reg_status, expected 302" /tmp/smoke-register
 pass "registered an account"
 
+# The sidebar shows the signed-in account's handle — the email address is
+# deliberately nowhere on the page.
 curl -sS -b "$COOKIES" -c "$COOKIES" "$BASE/" -o /tmp/smoke-feed
-grep -q "$EMAIL" /tmp/smoke-feed || fail "the feed does not show the new account as signed in" /tmp/smoke-feed
+grep -q "@$USERNAME" /tmp/smoke-feed || fail "the feed does not show the new account as signed in" /tmp/smoke-feed
 pass "registration signed the account in"
 
 # --- Posting while signed in --------------------------------------------------
@@ -100,6 +106,41 @@ pass "signed-in user posted, and got a turbo stream back"
 curl -sS "$BASE/" | grep -q "$MARKER" \
   || fail "the new post is not on the feed after reloading it"
 pass "the post survives a round trip and is visible to everyone"
+
+# --- Profiles (F-4.3, F-2.5) --------------------------------------------------
+
+# No cookies on purpose: profiles are public.
+curl -sS "$BASE/@$USERNAME" -o /tmp/smoke-profile
+grep -q "$MARKER" /tmp/smoke-profile \
+  || fail "the profile page does not list the account's post" /tmp/smoke-profile
+pass "the profile page is public and lists the account's posts"
+
+missing_status=$(curl -sS -o /dev/null -w '%{http_code}' "$BASE/@nobody_smoke_$RANDOM")
+[ "$missing_status" != "404" ] && fail "a profile nobody holds returned HTTP $missing_status, expected 404"
+pass "an unknown profile 404s"
+
+# --- Editing your own profile (F-4.4) -----------------------------------------
+
+curl -sS -b "$COOKIES" -c "$COOKIES" "$BASE/profile/edit" -o /tmp/smoke-profile-edit
+profile_token=$(token_from /tmp/smoke-profile-edit)
+[ -z "$profile_token" ] && fail "no CSRF token on the profile edit page" /tmp/smoke-profile-edit
+
+DISPLAY_NAME="Smoke Tester $RANDOM"
+profile_status=$(curl -sS -b "$COOKIES" -c "$COOKIES" -o /tmp/smoke-profile-update \
+  -w '%{http_code}' -X POST "$BASE/profile" \
+  -H 'Accept: text/html' \
+  --data-urlencode "authenticity_token=$profile_token" \
+  --data-urlencode "_method=patch" \
+  --data-urlencode "user[display_name]=$DISPLAY_NAME" \
+  --data-urlencode "user[bio]=Set by the smoke test.")
+[ "$profile_status" != "302" ] && fail "updating the profile returned HTTP $profile_status, expected 302" /tmp/smoke-profile-update
+
+curl -sS "$BASE/@$USERNAME" -o /tmp/smoke-profile-after
+grep -q "$DISPLAY_NAME" /tmp/smoke-profile-after \
+  || fail "the display name is not on the profile after saving it" /tmp/smoke-profile-after
+grep -q "Set by the smoke test." /tmp/smoke-profile-after \
+  || fail "the bio is not on the profile after saving it" /tmp/smoke-profile-after
+pass "display name and bio can be edited and are publicly visible"
 
 # --- Editing and deleting your own post (F-3.2, F-3.3) ------------------------
 
