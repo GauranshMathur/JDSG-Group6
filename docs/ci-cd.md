@@ -126,6 +126,27 @@ default branch, the commit messages since the last tag decide the bump — `feat
 minor, `fix` and `perf` give a patch, `!` or a `BREAKING CHANGE` footer gives a major. A
 merge carrying only `docs`, `chore`, `test` or `ci` commits produces no tag and no image.
 
+**Below 1.0, a breaking change bumps the minor rather than declaring 1.0.0.** SemVer clause 9
+says that while the major version is zero the public API is not stable and anything may change,
+so `0.1.3` plus a breaking change is `0.2.0`, not `1.0.0`. Reaching 1.0 is a deliberate claim
+that the app is stable, and should be an act rather than a side effect of a commit footer. The
+rule lifts automatically once the project is genuinely at 1.x, where a breaking change gives a
+major as normal.
+
+The derivation lives in [`.github/scripts/next-version.sh`](../.github/scripts/next-version.sh)
+with tests beside it, run as `.github/scripts/test-next-version.sh`. It is a script rather than
+inline YAML because it has shipped a wrong tag twice, and inline it could not be exercised
+without pushing:
+
+- **v0.0.1 instead of v0.1.0.** Only the newest commit in the range was ever classified — every
+  record after the first began with a newline, so `head -n1` returned an empty subject. Seven
+  tests passed against the bug, because every one of them put the release-worthy commit newest.
+- **v1.0.0 instead of v0.2.0.** A `BREAKING CHANGE` footer bumped the major with no 0.x case,
+  which would have promoted this proof of concept to a stable release.
+
+Both are now regression tests, and new cases are expected to be checked against the unfixed
+script first — a test that passes either way proves nothing.
+
 This is why the commit prefix is functional rather than decorative: mislabel a feature as a
 chore and it silently never ships a version.
 

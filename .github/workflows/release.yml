@@ -34,81 +34,13 @@ jobs:
           # The whole history, so the range since the last tag can be walked.
           fetch-depth: 0
 
-      # Derives the next SemVer from the Conventional Commit prefixes since the
-      # last v* tag: feat -> minor, fix/perf -> patch, ! or a BREAKING CHANGE
-      # footer -> major. A push carrying only docs/chore/test/ci commits produces
-      # no version, and every job below is skipped.
-      #
-      # This is deliberately hand-rolled rather than an off-the-shelf action.
-      # github-tag-action, the obvious choice, cannot bootstrap: with no existing
-      # tag it has no range to diff against, reports "Analysis of 0 commits" and
-      # silently declines to release — so the very first version never gets cut.
-      # Treating "no tag" as "consider the whole history" is the only difference,
-      # and it is not worth a dependency that gets it wrong.
+      # The derivation lives in .github/scripts/next-version.sh, with tests
+      # beside it, because this logic has shipped a wrong tag twice — v0.0.1
+      # instead of v0.1.0, and v1.0.0 instead of v0.2.0. Inline in YAML it could
+      # not be run or tested without pushing.
       - name: Determine next version
         id: next
-        run: |
-          set -euo pipefail
-
-          latest_tag=$(git tag -l 'v*' --sort=-v:refname | head -n1 || true)
-
-          if [ -z "$latest_tag" ]; then
-            range=""
-            previous="0.0.0"
-            echo "No previous tag; considering the full history."
-          else
-            range="${latest_tag}..HEAD"
-            previous="${latest_tag#v}"
-            echo "Previous tag ${latest_tag}; considering ${range}."
-          fi
-
-          # Subject then body per commit, with a record separator so one commit's
-          # BREAKING CHANGE footer cannot be misread as belonging to the next.
-          commits=$(git log --format=$'%s%n%b\x1e' ${range:+"$range"})
-
-          bump="none"
-          while IFS= read -r -d $'\x1e' commit; do
-            [ -z "${commit//[[:space:]]/}" ] && continue
-
-            # The first non-blank line, not simply the first line. Every record
-            # after the newest begins with the newline that terminated the
-            # previous one, so taking line 1 yields an empty subject and the
-            # commit goes unclassified — which silently under-bumps whenever the
-            # release-worthy commit is not the newest one in the range.
-            subject=$(printf '%s\n' "$commit" | grep -m1 -v '^[[:space:]]*$' || true)
-
-            if printf '%s\n' "$commit" | grep -qE '^BREAKING[ -]CHANGE:' ||
-               printf '%s\n' "$subject" | grep -qE '^[a-z]+(\([^)]*\))?!:'; then
-              bump="major"
-              break
-            elif printf '%s\n' "$subject" | grep -qE '^feat(\([^)]*\))?:'; then
-              bump="minor"
-            elif printf '%s\n' "$subject" | grep -qE '^(fix|perf)(\([^)]*\))?:'; then
-              [ "$bump" = "minor" ] || bump="patch"
-            fi
-          done <<< "$commits"
-
-          IFS=. read -r major minor patch <<< "$previous"
-
-          case "$bump" in
-            major) major=$((major + 1)); minor=0; patch=0 ;;
-            minor) minor=$((minor + 1)); patch=0 ;;
-            patch) patch=$((patch + 1)) ;;
-            none)
-              echo "No release-worthy commits since ${latest_tag:-the start of history}."
-              {
-                echo "bump=none"
-                echo "version="
-              } >> "$GITHUB_OUTPUT"
-              exit 0
-              ;;
-          esac
-
-          echo "Bump: ${bump}. Next version: ${major}.${minor}.${patch}."
-          {
-            echo "bump=$bump"
-            echo "version=${major}.${minor}.${patch}"
-          } >> "$GITHUB_OUTPUT"
+        run: .github/scripts/next-version.sh >> "$GITHUB_OUTPUT"
 
   release:
     name: Publish release
