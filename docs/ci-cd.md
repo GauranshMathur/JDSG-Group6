@@ -40,7 +40,27 @@ On the security gates:
   and LOW are reported without blocking. A HIGH in the image is usually inherited from the
   base image rather than written here, but inherited is not the same as acceptable — the
   fix is to bump the base image or patch the package, and the build stays red until someone
-  does. Full results are also uploaded to GitHub code scanning.
+  does.
+- **Each Trivy scan runs twice: once to gate, once to report.** The gating pass filters to
+  HIGH and CRITICAL and sets an exit code; the second pass produces SARIF at every severity
+  and uploads it to code scanning. The reporting pass is `if: always()`, so a failing gate
+  still publishes what it found — a scan that fails the build without saying why is the less
+  useful half of the two.
+
+**A note on the `Trivy` check, because it looks like a job and is not.** It is created by
+GitHub code scanning, named after the tool inside the SARIF, and it exists only when something
+uploads results. Until recently the only upload was in the container job, which a docs-only
+pull request skips — so on those pull requests the check was never created at all, and GitHub
+listed it as expected and waiting for a status that was never coming. It reads exactly like a
+job that refuses to be scheduled.
+
+The filesystem scan now uploads too, from the SAST job, which is never skipped. That closes
+two things at once: the check reports on every pull request, and the filesystem findings —
+including the secret scanning that runs on documentation changes — reach the Security tab
+instead of only ever setting an exit code.
+
+This matters for required status checks (N-4.2). Requiring `Trivy` before this change would
+have deadlocked every documentation pull request permanently.
 - **`ignore-unfixed` is on**, so only findings with an available fix count. A vulnerability
   with no upstream patch cannot be actioned by any change in this repository; failing on it
   would only teach everyone to ignore the gate.
