@@ -19,5 +19,5 @@
     <% end %>
   </div>
 
-  <%= render "posts/pagination", next_cursor: @next_cursor %>
+  <%= render "posts/pagination", next_cursor: @next_cursor, url: posts_path(after: @next_cursor) %>
 </div>

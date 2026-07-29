@@ -1,6 +1,9 @@
 <article class="post" id="<%= dom_id(post) %>">
   <header class="post__header">
-    <span class="post__author"><%= post.user.display_name %></span>
+    <%= link_to profile_path(post.user.username), class: "post__author" do %>
+      <span class="post__author-name"><%= post.user.name %></span>
+      <span class="post__author-handle">@<%= post.user.username %></span>
+    <% end %>
     <time class="post__time" datetime="<%= post.created_at.iso8601 %>">
       <%= time_ago_in_words(post.created_at) %> ago
     </time>

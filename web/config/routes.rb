@@ -18,5 +18,17 @@ Rails.application.routes.draw do
   # The feed is the whole application for now.
   resources :posts, only: [ :index, :create, :edit, :update, :destroy ]
 
+  # Public profiles. The @ is literal — /@ada — so a profile URL reads the way
+  # the handle is written everywhere else. Stable forever, because usernames
+  # never change (ADR 0006).
+  get "@:username", to: "profiles#show", as: :profile,
+      constraints: { username: /[A-Za-z0-9_]+/ }
+
+  # Editing your own profile. Singular and id-less on purpose: the resource is
+  # whoever is signed in, so a route to anyone else's profile settings does not
+  # exist, rather than existing and needing a guard (F-4.5).
+  get   "profile/edit", to: "profiles#edit",   as: :edit_profile
+  patch "profile",      to: "profiles#update", as: :update_profile
+
   root "posts#index"
 end

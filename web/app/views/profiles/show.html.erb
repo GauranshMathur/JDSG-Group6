@@ -1,0 +1,31 @@
+<% content_for :title, "#{@user.name} (@#{@user.username})" %>
+
+<div class="feed profile">
+  <header class="profile__header">
+    <h1 class="profile__name"><%= @user.name %></h1>
+    <p class="profile__handle">@<%= @user.username %></p>
+
+    <% if @user.bio.present? %>
+      <p class="profile__bio"><%= @user.bio %></p>
+    <% end %>
+
+    <p class="profile__joined">Joined <%= @user.created_at.strftime("%B %Y") %></p>
+
+    <%# Presentation only — the edit routes act on Current.user regardless. %>
+    <% if @user == Current.user %>
+      <%= link_to "Edit profile", edit_profile_path, class: "profile__edit" %>
+    <% end %>
+  </header>
+
+  <div id="timeline" class="timeline">
+    <%= render partial: "posts/post", collection: @posts %>
+
+    <% if @posts.empty? %>
+      <p class="timeline__empty">No posts yet.</p>
+    <% end %>
+  </div>
+
+  <%= render "posts/pagination",
+        next_cursor: @next_cursor,
+        url: profile_path(@user.username, after: @next_cursor) %>
+</div>

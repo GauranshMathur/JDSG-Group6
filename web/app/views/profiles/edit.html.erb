@@ -1,0 +1,40 @@
+<% content_for :title, "Edit profile" %>
+
+<%# Reuses the auth card styling — same shape of page: one small form. %>
+<div class="auth">
+  <h1 class="auth__heading">Edit profile</h1>
+
+  <%= form_with model: @user, url: update_profile_path, method: :patch, class: "auth__form" do |form| %>
+    <% if @user.errors.any? %>
+      <ul class="auth__errors">
+        <% @user.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    <% end %>
+
+    <span class="auth__label">Username</span>
+    <p class="auth__static">@<%= @user.username %></p>
+    <p class="auth__hint">Usernames are permanent — this one is yours for good.</p>
+
+    <%= form.label :display_name, "Display name", class: "auth__label" %>
+    <%= form.text_field :display_name,
+          class: "auth__input",
+          maxlength: User::MAX_DISPLAY_NAME_LENGTH,
+          placeholder: @user.username %>
+    <p class="auth__hint">Shown beside your handle. Leave blank to go by @<%= @user.username %>.</p>
+
+    <%= form.label :bio, "Bio", class: "auth__label" %>
+    <%= form.text_area :bio,
+          class: "auth__input auth__input--textarea",
+          maxlength: User::MAX_BIO_LENGTH,
+          rows: 3 %>
+    <p class="auth__hint">Up to <%= User::MAX_BIO_LENGTH %> characters.</p>
+
+    <%= form.submit "Save profile", class: "auth__submit" %>
+  <% end %>
+
+  <p class="auth__alternative">
+    <%= link_to "Back to your profile", profile_path(@user.username) %>
+  </p>
+</div>
