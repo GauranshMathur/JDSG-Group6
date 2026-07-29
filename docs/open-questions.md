@@ -46,15 +46,6 @@ case? Someone posting "good morning" every day is not spamming.
 
 **When:** not urgent. Worth deciding before anything invites real usage.
 
-### Should `username` be changeable after registration?
-
-**Why it matters:** profile URLs are `/@username`. If usernames change, old links break unless
-historical usernames are retained and redirected — which means a table of past usernames and a
-rule about whether a released username can be claimed by someone else.
-
-**When:** milestone 4, before profile URLs exist. Retrofitting stable URLs afterwards is
-painful.
-
 ### Should posts carry images?
 
 Formats, size ceiling, whether they are re-encoded and compressed on upload, what
