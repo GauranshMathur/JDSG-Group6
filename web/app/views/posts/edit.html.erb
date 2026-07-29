@@ -1,0 +1,25 @@
+<% content_for :title, "Edit post" %>
+
+<div class="feed">
+  <h1 class="feed__heading">Edit post</h1>
+
+  <%= form_with model: @post, class: "composer" do |form| %>
+    <% if @post.errors.any? %>
+      <ul class="composer__errors">
+        <% @post.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    <% end %>
+
+    <%= form.text_area :body,
+          class: "composer__body",
+          rows: 3,
+          maxlength: Post::MAX_BODY_LENGTH %>
+
+    <div class="composer__row">
+      <%= link_to "Cancel", posts_path, class: "composer__cancel" %>
+      <%= form.submit "Save", class: "composer__submit" %>
+    </div>
+  <% end %>
+</div>

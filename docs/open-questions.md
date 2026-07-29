@@ -14,27 +14,27 @@ relevant document when it is not.
 
 ## Product
 
-### Should an edit be visible as an edit?
+### Should an edit history be kept?
 
-Milestone 3 lets an author change a published post. It does not say whether that change is
-*honest* — an "edited" marker, a timestamp, a history, or nothing at all.
+**Partly answered.** Milestone 3 ships an "edited" marker — a post that has changed says so.
+What it does *not* keep is the previous wording, so an edit is visible but not inspectable.
 
-**Why it matters:** a post that can change silently after people have read it is a different
-object from one that shows it changed. Someone can agree with a post and then find they have
-agreed with something else. It also interacts with caching, and with any future
-fan-out-on-write timeline.
+**Why it matters:** the marker was the cheap half. A history is the half that cannot be added
+retroactively: every edit made from now until it exists is one whose earlier version is
+already gone. The cost of leaving this open is accruing, which is not true of most of the
+questions on this page.
 
-**When:** during milestone 3. Adding a marker later is easy; adding a history later means the
-edits made in between are already gone.
+**When:** before anything invites real usage. It is cheap while the table is small.
 
 ### Is there a time limit on editing?
 
-Can a post be rewritten a minute after posting, a year after, or not once someone has replied
-to it?
+Milestone 3 ships no limit — a post can be rewritten a minute or a year after publication.
 
-**Why it matters:** it is the difference between fixing a typo and rewriting history.
+**Why it matters:** it is the difference between fixing a typo and rewriting history, and it
+matters more once replies exist, because a reply can be made to agree with something that is
+then changed underneath it.
 
-**When:** milestone 3, alongside the question above. They are really one decision.
+**When:** with replies, which are milestone 8. Not urgent before then.
 
 ### Should duplicate posts be prevented?
 
@@ -54,16 +54,6 @@ rule about whether a released username can be claimed by someone else.
 
 **When:** milestone 4, before profile URLs exist. Retrofitting stable URLs afterwards is
 painful.
-
-### What happens to someone's posts when they delete their account?
-
-Cascade and remove them, or keep them attributed to a deleted user?
-
-**Why it matters:** it shapes the schema — a nullable `user_id` and a tombstone versus a hard
-foreign key — before the feature is built.
-
-**When:** account deletion is out of scope, but answer this before milestone 3 fixes the
-foreign key, because the answer decides whether it can be null.
 
 ### Should posts carry images?
 

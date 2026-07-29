@@ -16,7 +16,7 @@ Rails.application.routes.draw do
   # get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
 
   # The feed is the whole application for now.
-  resources :posts, only: [ :index, :create ]
+  resources :posts, only: [ :index, :create, :edit, :update, :destroy ]
 
   root "posts#index"
 end

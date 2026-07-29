@@ -88,7 +88,6 @@ status=$(curl -sS -b "$COOKIES" -c "$COOKIES" -o /tmp/smoke-post \
   -w '%{http_code}' -X POST "$BASE/posts" \
   -H 'Accept: text/vnd.turbo-stream.html' \
   --data-urlencode "authenticity_token=$token" \
-  --data-urlencode "post[author_name]=smoke" \
   --data-urlencode "post[body]=$MARKER")
 [ "$status" != "200" ] && fail "creating a post returned HTTP $status, expected 200" /tmp/smoke-post
 
@@ -101,6 +100,38 @@ pass "signed-in user posted, and got a turbo stream back"
 curl -sS "$BASE/" | grep -q "$MARKER" \
   || fail "the new post is not on the feed after reloading it"
 pass "the post survives a round trip and is visible to everyone"
+
+# --- Editing and deleting your own post (F-3.2, F-3.3) ------------------------
+
+post_id=$(grep -oE 'id="post_[0-9]+"' /tmp/smoke-post | head -1 | grep -oE '[0-9]+')
+[ -z "$post_id" ] && fail "could not find the new post's id in the turbo stream" /tmp/smoke-post
+
+curl -sS -b "$COOKIES" -c "$COOKIES" "$BASE/posts/$post_id/edit" -o /tmp/smoke-edit
+grep -q "$MARKER" /tmp/smoke-edit || fail "the edit form does not contain the post" /tmp/smoke-edit
+pass "the author can open their own post for editing"
+
+edit_token=$(token_from /tmp/smoke-edit)
+edited="$MARKER-edited"
+edit_status=$(curl -sS -b "$COOKIES" -c "$COOKIES" -o /tmp/smoke-update \
+  -w '%{http_code}' -X POST "$BASE/posts/$post_id" \
+  -H 'Accept: text/html' \
+  --data-urlencode "authenticity_token=$edit_token" \
+  --data-urlencode "_method=patch" \
+  --data-urlencode "post[body]=$edited")
+[ "$edit_status" != "302" ] && fail "editing returned HTTP $edit_status, expected 302" /tmp/smoke-update
+
+curl -sS "$BASE/" | grep -q "$edited" || fail "the edited body is not on the feed"
+pass "the edit is saved and visible to everyone"
+
+del_status=$(curl -sS -b "$COOKIES" -c "$COOKIES" -o /dev/null \
+  -w '%{http_code}' -X POST "$BASE/posts/$post_id" \
+  -H 'Accept: text/html' \
+  --data-urlencode "authenticity_token=$edit_token" \
+  --data-urlencode "_method=delete")
+[ "$del_status" != "302" ] && fail "deleting returned HTTP $del_status, expected 302"
+
+curl -sS "$BASE/" | grep -q "$edited" && fail "the deleted post is still on the feed"
+pass "the author can delete their own post"
 
 # --- Sign out revokes the session (F-2.4) -------------------------------------
 
