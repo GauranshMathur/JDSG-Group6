@@ -2,7 +2,8 @@ require "rails_helper"
 
 RSpec.describe "Registrations" do
   let(:valid_params) do
-    { user: { email_address: "ada@example.com",
+    { user: { username: "ada",
+              email_address: "ada@example.com",
               password: "sekrit-password",
               password_confirmation: "sekrit-password" } }
   end
@@ -34,6 +35,28 @@ RSpec.describe "Registrations" do
 
       expect(response).to redirect_to(root_url)
       expect(Session.count).to eq(1)
+    end
+
+    # F-4.2/F-4.6 — the username is claimed here, and only here.
+    it "sets the chosen username" do
+      post registration_path, params: valid_params
+
+      expect(User.last.username).to eq("ada")
+    end
+
+    it "rejects a username someone already holds, whatever the case" do
+      create(:user, username: "ada")
+      params = valid_params.deep_merge(user: { username: "ADA" })
+
+      expect { post registration_path, params: params }.not_to change(User, :count)
+      expect(response).to have_http_status(:unprocessable_content)
+    end
+
+    it "rejects a username with characters outside letters, numbers and underscores" do
+      params = valid_params.deep_merge(user: { username: "ada!" })
+
+      expect { post registration_path, params: params }.not_to change(User, :count)
+      expect(response).to have_http_status(:unprocessable_content)
     end
 
     it "rejects a duplicate email address" do

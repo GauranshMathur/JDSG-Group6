@@ -1,0 +1,24 @@
+<%# The application shell (F-4.1). Search joins this list in milestone 6. %>
+<aside class="sidebar">
+  <%= link_to "Twitter Clone", root_path, class: "sidebar__brand" %>
+
+  <nav class="sidebar__nav">
+    <%= link_to "Feed", root_path, class: "sidebar__link" %>
+    <% if authenticated? %>
+      <%= link_to "Profile", profile_path(Current.user.username), class: "sidebar__link" %>
+    <% end %>
+  </nav>
+
+  <div class="sidebar__account">
+    <% if authenticated? %>
+      <p class="sidebar__user">
+        <span class="sidebar__user-name"><%= Current.user.name %></span>
+        <span class="sidebar__user-handle">@<%= Current.user.username %></span>
+      </p>
+      <%= button_to "Sign out", session_path, method: :delete, class: "sidebar__link sidebar__link--button" %>
+    <% else %>
+      <%= link_to "Sign in", new_session_path, class: "sidebar__link" %>
+      <%= link_to "Sign up", new_registration_path, class: "sidebar__link" %>
+    <% end %>
+  </div>
+</aside>

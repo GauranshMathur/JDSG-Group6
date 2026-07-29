@@ -28,10 +28,11 @@ Where things are written down:
 | `docs/open-questions.md` | Decisions not yet taken, each with why it matters and when it is needed |
 | `docs/adr/` | Decision records — why a choice was made, and what it cost |
 
-**Current state: milestones 1 and 2 done, milestones 3–6 planned but not started.** The Rails
+**Current state: milestones 1–4 done, milestones 5 and 6 planned but not started.** The Rails
 app exists in `web/`, the feed works, and accounts exist — register, sign in, sign out, reset.
-Posts still carry a free-text author name and do **not** belong to a user; milestone 3 fixes
-that. No follows, no jobs, no infra.
+Posts belong to their authors, who can edit and delete their own. Every account has an
+immutable username, a public `/@username` profile page, and an editable display name and bio;
+a sidebar is the application shell. No hashtags, no search, no follows, no jobs, no infra.
 
 ## How we work here
 
@@ -171,7 +172,7 @@ docker compose -f infra/docker/docker-compose.yml up -d   # Postgres, only when 
 
 ## Current milestone
 
-**Milestone 3 — post ownership and CRUD.** Milestones 3 to 6 are planned in detail in
+**Milestone 5 — hashtags.** Milestones 5 and 6 are planned in detail in
 `docs/roadmap.md`; read that and the matching requirement IDs in `REQUIREMENTS.md` before
 starting. Build them in order, one at a time — the plan exists so
 that a change touching auth, ownership, navigation, tagging and search all at once never gets

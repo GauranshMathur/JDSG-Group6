@@ -37,6 +37,76 @@ RSpec.describe User do
     end
   end
 
+  describe "username" do
+    it "requires one" do
+      user = build(:user, username: nil)
+
+      expect(user).not_to be_valid
+      expect(user.errors[:username]).to be_present
+    end
+
+    it "rejects characters outside letters, numbers and underscores" do
+      expect(build(:user, username: "with-dash")).not_to be_valid
+      expect(build(:user, username: "with space")).not_to be_valid
+      expect(build(:user, username: "with.dot")).not_to be_valid
+    end
+
+    it "rejects one shorter than 3 or longer than 20 characters" do
+      expect(build(:user, username: "ab")).not_to be_valid
+      expect(build(:user, username: "a" * 21)).not_to be_valid
+    end
+
+    # F-4.2, same mechanism as email (F-2.2): stored lower-cased, so the plain
+    # unique index is case-insensitive without anything adapter-specific.
+    it "stores usernames lower-cased and stripped" do
+      expect(create(:user, username: "  Ada_99  ").username).to eq("ada_99")
+    end
+
+    it "rejects a duplicate differing only in case" do
+      create(:user, username: "ada")
+
+      expect(build(:user, username: "ADA")).not_to be_valid
+    end
+
+    # ADR 0006 / F-4.6. attr_readonly makes immutability the model's rule:
+    # assignment on a persisted record raises, so no forgotten permit list can
+    # quietly allow a rename.
+    it "cannot be changed once the account exists" do
+      user = create(:user, username: "ada")
+
+      expect { user.username = "someone_else" }
+        .to raise_error(ActiveRecord::ReadonlyAttributeError)
+    end
+  end
+
+  describe "#name" do
+    it "is the display name when one is set" do
+      expect(build(:user, username: "ada", display_name: "Ada Lovelace").name).to eq("Ada Lovelace")
+    end
+
+    it "falls back to the username when there is none" do
+      expect(build(:user, username: "ada", display_name: nil).name).to eq("ada")
+      expect(build(:user, username: "ada", display_name: "").name).to eq("ada")
+    end
+  end
+
+  describe "profile fields" do
+    it "accepts a display name and bio at their limits" do
+      user = build(:user, display_name: "a" * User::MAX_DISPLAY_NAME_LENGTH,
+                          bio: "b" * User::MAX_BIO_LENGTH)
+
+      expect(user).to be_valid
+    end
+
+    it "rejects a display name over the limit" do
+      expect(build(:user, display_name: "a" * (User::MAX_DISPLAY_NAME_LENGTH + 1))).not_to be_valid
+    end
+
+    it "rejects a bio over the limit" do
+      expect(build(:user, bio: "b" * (User::MAX_BIO_LENGTH + 1))).not_to be_valid
+    end
+  end
+
   describe "email address uniqueness" do
     it "rejects a duplicate address" do
       create(:user, email_address: "ada@example.com")

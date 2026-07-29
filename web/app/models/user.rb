@@ -1,5 +1,8 @@
 class User < ApplicationRecord
   MINIMUM_PASSWORD_LENGTH = 8
+  USERNAME_FORMAT = /\A[a-z0-9_]{3,20}\z/
+  MAX_DISPLAY_NAME_LENGTH = 50
+  MAX_BIO_LENGTH = 160
 
   has_secure_password
   has_many :sessions, dependent: :destroy
@@ -10,28 +13,39 @@ class User < ApplicationRecord
   # too; this makes the refusal an error you can read.
   has_many :posts, dependent: :restrict_with_error
 
+  # Chosen at registration and never changed — ADR 0006. attr_readonly makes
+  # that the model's rule rather than a convention: assigning to it on a
+  # persisted record raises, so there is no code path that renames anyone.
+  attr_readonly :username
+
   # Addresses are stored already lower-cased, so the unique index on the column
   # enforces case-insensitive uniqueness on its own (F-2.2). The alternative — a
   # functional index over LOWER(email_address) — is written differently on SQLite
-  # and PostgreSQL, which N-1.2 rules out.
+  # and PostgreSQL, which N-1.2 rules out. The username works the same way:
+  # normalised on write, one plain unique index, nothing adapter-specific.
   normalizes :email_address, with: ->(e) { e.strip.downcase }
+  normalizes :username, with: ->(u) { u.strip.downcase }
 
   validates :email_address, presence: true,
                             format: { with: URI::MailTo::EMAIL_REGEXP },
                             uniqueness: true
 
+  validates :username, presence: true,
+                       uniqueness: true,
+                       format: { with: USERNAME_FORMAT,
+                                 message: "must be 3–20 characters: letters, numbers and underscores only" }
+
   # allow_nil so a user can be updated without resupplying a password.
   # has_secure_password already requires one to be present on create.
   validates :password, length: { minimum: MINIMUM_PASSWORD_LENGTH }, allow_nil: true
 
-  # What the feed shows next to a post. The local part only: the timeline is
-  # public, and publishing full email addresses to anyone who loads the page
-  # invites scraping.
-  #
-  # Temporary. Milestone 4 adds a real username and this goes away — until then
-  # two people at different domains with the same local part are indistinguishable
-  # on screen, though they remain distinct accounts.
-  def display_name
-    email_address.split("@").first
+  validates :display_name, length: { maximum: MAX_DISPLAY_NAME_LENGTH }
+  validates :bio, length: { maximum: MAX_BIO_LENGTH }
+
+  # What the UI shows on the author line: the display name when one is set,
+  # falling back to the username. This retires milestone 3's stopgap of showing
+  # the email local part.
+  def name
+    display_name.presence || username
   end
 end

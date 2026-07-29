@@ -25,13 +25,14 @@ RSpec.describe "Posts" do
       expect(response.body).to include("What&#39;s happening?")
     end
 
-    it "shows existing posts" do
-      create(:post, body: "hello world", user: create(:user, email_address: "ada@example.com"))
+    it "shows existing posts with their author's handle linking to the profile" do
+      create(:post, body: "hello world", user: create(:user, username: "ada"))
 
       get posts_path
 
       expect(response.body).to include("hello world")
-      expect(response.body).to include("ada")
+      expect(response.body).to include("@ada")
+      expect(response.body).to include(profile_path("ada"))
     end
 
     it "shows the empty state when there are no posts" do

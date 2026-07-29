@@ -1,5 +1,7 @@
+<%# Callers pass the URL for the next page, since the same cursor means a
+    different path on the feed and on a profile. %>
 <% if next_cursor.present? %>
   <div class="pagination">
-    <%= link_to "Load older posts", posts_path(after: next_cursor), class: "pagination__more" %>
+    <%= link_to "Load older posts", url, class: "pagination__more" %>
   </div>
 <% end %>
