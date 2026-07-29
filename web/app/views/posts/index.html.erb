@@ -3,7 +3,13 @@
 <div class="feed">
   <h1 class="feed__heading">Feed</h1>
 
-  <%= render "posts/composer", post: @post %>
+  <%# Reading is public, so signed-out visitors get the timeline and a prompt
+      rather than a form that would only bounce them to sign in. %>
+  <% if authenticated? %>
+    <%= render "posts/composer", post: @post %>
+  <% else %>
+    <%= render "posts/sign_in_prompt" %>
+  <% end %>
 
   <div id="timeline" class="timeline">
     <%= render partial: "posts/post", collection: @posts %>

@@ -1,6 +1,9 @@
 class PostsController < ApplicationController
   PAGE_SIZE = 20
 
+  # Reading is public; only writing needs an account. See docs/design-principles.md.
+  allow_unauthenticated_access only: :index
+
   def index
     @post = Post.new
     @posts = page_of_posts
