@@ -182,6 +182,26 @@ Real answers are needed only if this is ever deployed.
 
 ---
 
+## 2.6 Latency and degradation
+
+How the app behaves when the network between it and its database is slow. Nothing here is
+built; the reasoning and the proposed order are in [`docs/latency.md`](docs/latency.md).
+
+None of this is testable on SQLite, which runs in-process with no wire to slow down, so all of
+it depends on the PostgreSQL path — which is itself an untested claim today (N-1.2, ADR 0003).
+
+| ID | Requirement | Status |
+| --- | --- | --- |
+| N-6.1 | Rendering the feed issues a constant number of queries, regardless of how many posts are on the page | Open — 2 today; milestone 3 introduces the N+1 that would break it |
+| N-6.2 | Query count per request is asserted in specs, so a regression fails the build rather than being noticed as slowness | Open — the cheapest guard, and needs no PostgreSQL |
+| N-6.3 | The connection pool is larger than the Puma thread count | Open — equal when `RAILS_MAX_THREADS` is set, since both read it |
+| N-6.4 | Connection, checkout and statement timeouts are configured and adapter-neutral | Not met — the only timeout set is `timeout: 5000`, which is SQLite's `busy_timeout` and is ignored by PostgreSQL |
+| N-6.5 | A readiness endpoint reports unhealthy when the database is unreachable | Not met — `/up` checks only that the app booted, so it returns 200 against a dead database. Deliberately separate from `/up`, which should not restart the app because a dependency is down |
+| N-6.6 | Behaviour under injected latency is measured and written down — p50/p95, queries per request, errors | Open — proposed harness is Toxiproxy between the app and PostgreSQL containers |
+| N-6.7 | The test suite passes against PostgreSQL, not only SQLite | Not met — no CI job has ever run it |
+
+---
+
 ## 3. Out of scope
 
 Explicitly not being built, to keep the current milestone honest:

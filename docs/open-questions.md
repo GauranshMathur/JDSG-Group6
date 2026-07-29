@@ -96,7 +96,22 @@ variable. Nothing tests that claim — no CI job runs the suite against PostgreS
 **Why it matters:** an untested claim about portability is a guess, and adapter assumptions
 get found at the worst possible moment.
 
-**When:** worth a CI matrix run before anyone relies on it.
+**When:** it now has a date. The latency work in [`latency.md`](latency.md) cannot start
+without PostgreSQL, because SQLite runs in-process and there is no network to slow down. So
+verifying the switch and measuring latency are one piece of work, not two. Tracked as N-6.7.
+
+### How does the app degrade when the database is slow?
+
+Not a single question so much as a set of them, written up in [`latency.md`](latency.md):
+query counts, pool exhaustion, timeouts that only apply to SQLite, and a health check that
+reports 200 against a dead database.
+
+**Why it matters:** none of it is visible today, because SQLite is in-process. All of it
+appears at once the first time PostgreSQL runs in its own container.
+
+**When:** steps 1 to 3 of that document are small and worth doing regardless — in particular
+the query-count guard, which should land before milestone 3 creates the N+1 it exists to
+catch. The measurement harness is a separate, larger piece.
 
 ---
 

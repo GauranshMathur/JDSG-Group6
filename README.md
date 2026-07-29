@@ -24,6 +24,7 @@ so that each document can be read on its own and changed without rewriting the r
 | [Roadmap](docs/roadmap.md) | Milestones, what shipped, and the plan for milestones 3–6 |
 | [Design principles](docs/design-principles.md) | The 90-9-1 rule, and ownership over visibility |
 | [Database](docs/database.md) | SQLite today, and the switch to PostgreSQL |
+| [Latency](docs/latency.md) | How the app should degrade when the database is slow — planned, not built |
 | [CI/CD](docs/ci-cd.md) | The pipeline, versioning, and how releases are cut |
 | [Infrastructure](docs/infrastructure.md) | AWS, entirely a TODO |
 | [Open questions](docs/open-questions.md) | Decisions not yet taken — a live list, pruned as they are answered |

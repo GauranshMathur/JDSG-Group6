@@ -24,6 +24,7 @@ Where things are written down:
 | `docs/roadmap.md` | Milestones, what shipped, and the plan for the next ones |
 | `docs/design-principles.md` | The 90-9-1 rule, and ownership over visibility |
 | `docs/database.md`, `docs/ci-cd.md`, `docs/infrastructure.md` | The detail for each |
+| `docs/latency.md` | How the app should degrade when the database is slow. Planned, not built — see N-6.x |
 | `docs/open-questions.md` | Decisions not yet taken, each with why it matters and when it is needed |
 | `docs/adr/` | Decision records — why a choice was made, and what it cost |
 
