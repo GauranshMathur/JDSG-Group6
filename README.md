@@ -7,8 +7,9 @@ end. It is not a product and is not deployed anywhere. Where a decision trades p
 robustness for getting something working and understandable, it takes the second — those
 trades are called out where they are made rather than left implicit.
 
-> **Status: milestone 1 shipped.** The feed works and is released as a container image.
-> Authentication is next. See the [roadmap](docs/roadmap.md).
+> **Status: milestones 1 and 2 shipped.** The feed works, accounts exist, and the app is
+> released as a container image. Reading needs no account; posting does. Posts do not belong
+> to their author yet — that is milestone 3. See the [roadmap](docs/roadmap.md).
 
 ---
 
@@ -20,7 +21,7 @@ so that each document can be read on its own and changed without rewriting the r
 | Document | What is in it |
 | --- | --- |
 | [Requirements](REQUIREMENTS.md) | Numbered, testable requirements and whether each is met |
-| [Roadmap](docs/roadmap.md) | Milestones, what shipped, and the plan for milestones 2–6 |
+| [Roadmap](docs/roadmap.md) | Milestones, what shipped, and the plan for milestones 3–6 |
 | [Design principles](docs/design-principles.md) | The 90-9-1 rule, and ownership over visibility |
 | [Database](docs/database.md) | SQLite today, and the switch to PostgreSQL |
 | [CI/CD](docs/ci-cd.md) | The pipeline, versioning, and how releases are cut |

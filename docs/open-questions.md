@@ -140,7 +140,6 @@ deployed; they are recorded so the gap is known rather than forgotten. Tracked a
 - Password reset email has no delivery service — the flow and mailer exist, nothing sends.
 - No email verification, so an account can be registered against an address its owner does not
   control.
-- No rate limiting on sign-in attempts.
 - `RAILS_FORCE_SSL` and `RAILS_ASSUME_SSL` default to off — see N-3.11.
 - No backups, and no restore has ever been tested.
 - Multi-environment strategy — staging and production, or production only.
