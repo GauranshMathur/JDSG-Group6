@@ -1,8 +1,14 @@
 name: Release
 
-# Runs after a pull request lands on the default branch. CI has already passed on
-# the merge commit's contents by this point; this workflow only decides whether
-# the merge warrants a version and publishes the image if so.
+# Runs after a pull request lands on the default branch.
+#
+# This workflow ships; it does not re-test. Lint, specs, SAST, the image scan, the
+# boot check, the posting smoke test and the DAST scan all ran on the pull request
+# against this same code, and running them again here would spend the same minutes
+# to reach the same answer.
+#
+# The only build of the merged code happens here, and the release is published
+# strictly after that image is in the registry — never alongside it.
 on:
   push:
     branches: [ main ]
@@ -106,7 +112,11 @@ jobs:
 
   release:
     name: Publish release
-    needs: version
+    # Deliberately after the image, not beside it. When these ran in parallel the
+    # tag and GitHub release appeared while the build was still going, so a pull
+    # of the freshly announced version returned "not found" for several minutes —
+    # and a failed build would have left a release pointing at nothing.
+    needs: [ version, image ]
     if: needs.version.outputs.released == 'true'
     runs-on: ubuntu-latest
     permissions:
