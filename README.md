@@ -261,7 +261,7 @@ Treating "no tag yet" as "consider the whole history" is the only behavioural di
 
 GitHub Actions, in two workflows.
 
-### `ci.yml` — every pull request
+### `ci.yml` — pull requests only
 
 All work reaches the default branch through a pull request, and a pull request merges only
 once these pass. Jobs run in parallel:
@@ -293,12 +293,27 @@ polls `/up` until the app answers, so a broken image fails CI rather than a depl
 
 ### `release.yml` — after merge to the default branch
 
+This workflow **ships; it does not re-test.**
+
 1. Derive the next semantic version from the Conventional Commits since the last tag.
 2. Stop here if nothing warrants a release.
-3. Create the git tag and a GitHub release with generated notes.
-4. Build the image and tag it with the version, `sha-<commit>`, and `latest`.
-5. Push it to the **GitHub Container Registry** at
-   `ghcr.io/gauranshmathur/twitter-clone-web`, for both `linux/amd64` and `linux/arm64`.
+3. Build the image and push it to the **GitHub Container Registry** at
+   `ghcr.io/gauranshmathur/twitter-clone-web`, tagged with the version, `sha-<commit>` and
+   `latest`, for both `linux/amd64` and `linux/arm64`.
+4. **Then** create the git tag and the GitHub release.
+
+Nothing from `ci.yml` is repeated here. Every check ran on the pull request against this
+same code, and running the suite twice spends the same minutes to reach the same answer.
+The merged code is built exactly once, by this workflow.
+
+The ordering in steps 3 and 4 is deliberate. These jobs used to run in parallel, so the tag
+and release appeared while the build was still going — a pull of the just-announced version
+returned `not found` for several minutes, and a failed build would have left a published
+release pointing at an image that never existed.
+
+Because there is no gate on `main`, the pull request has to be a real one. Turn on
+**Require branches to be up to date before merging**: without it, two branches can each
+pass in isolation and still break once merged, and nothing downstream will catch it.
 
 **Registry: GHCR, for now.** It needs no provisioning — the built-in `GITHUB_TOKEN`
 authenticates the push, so there is no registry to create and no secret to manage. Amazon

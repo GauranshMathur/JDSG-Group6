@@ -1,9 +1,15 @@
 name: CI
 
+# Pull requests only. Every check here runs against the branch before it merges,
+# and release.yml deliberately does not repeat them on main: re-running the same
+# suite against the same code would double the work to reach the same answer.
+#
+# The consequence is that the pull request is the only gate, so it has to be a
+# real one. Enable "Require branches to be up to date before merging" on main —
+# without it two branches can each pass in isolation and still break once merged,
+# and nothing downstream will notice.
 on:
   pull_request:
-  push:
-    branches: [ main ]
 
 # A new push to a pull request makes the in-flight run obsolete.
 concurrency:
