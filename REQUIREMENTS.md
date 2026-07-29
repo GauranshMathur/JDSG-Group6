@@ -7,7 +7,11 @@ milestone is actually finished.
 Each requirement has an ID so specs, commits and issues can point at it.
 
 Status: **Met** — implemented and covered by tests. **Partial** — implemented but
-incomplete. **Planned** — agreed, not built. **Open** — not yet decided.
+incomplete. **Planned** — agreed, not built. **Open** — not yet decided. **Deferred** —
+knowingly not done, because this is a proof of concept and nothing is deployed.
+
+A **Deferred** row is not a to-do. It is a gap recorded so that nobody mistakes the app for
+production-ready, and so the work is visible if it ever is deployed.
 
 ---
 
@@ -38,7 +42,7 @@ incomplete. **Planned** — agreed, not built. **Open** — not yet decided.
 | F-2.4 | Signing out revokes the session server-side, not only in the browser | Planned |
 | F-2.5 | Reading the feed, profiles and tag pages never requires an account | Planned |
 | F-2.6 | Creating, editing and deleting require a signed-in user | Planned |
-| F-2.7 | A user can reset a forgotten password | Planned — delivery in production is an open question |
+| F-2.7 | A user can reset a forgotten password | Planned — against the development mailer only; see N-5.1 |
 
 ### 1.3 Post ownership and CRUD (milestone 3)
 
@@ -141,7 +145,7 @@ Recorded so the shape of the system is visible; none are being built yet.
 | N-3.8 | User-supplied content is escaped on output | Met — ERB escapes by default |
 | N-3.9 | Secrets are never committed; Trivy scans for them | Met |
 | N-3.10 | The base image is kept current, since inherited CVEs fail the build like any other | Met |
-| N-3.11 | SSL is enforced wherever the app is served over TLS — HSTS, https redirect, secure cookies | **Planned — `RAILS_FORCE_SSL` and `RAILS_ASSUME_SSL` default to off so the image runs over plain HTTP locally. Both must be set to `true` in any deployed environment.** |
+| N-3.11 | SSL is enforced wherever the app is served over TLS — HSTS, https redirect, secure cookies | Deferred — `RAILS_FORCE_SSL` and `RAILS_ASSUME_SSL` default to off so the image runs over plain HTTP. Both must be set to `true` in any deployed environment |
 
 ### 2.4 Delivery
 
@@ -159,6 +163,20 @@ Recorded so the shape of the system is visible; none are being built yet.
 | N-4.9 | Published images run on both `linux/amd64` and `linux/arm64` | Met |
 | N-4.10 | Images are published to Amazon ECR | Planned — written and commented out pending AWS setup |
 | N-4.11 | The app is deployed to AWS | Planned |
+
+---
+
+## 2.5 Deferred by proof-of-concept scope
+
+Real answers are needed only if this is ever deployed.
+
+| ID | Requirement | Status |
+| --- | --- | --- |
+| N-5.1 | Password reset email reaches a real inbox | Deferred — the flow and mailer exist; no delivery service is configured, so reset sends nothing outside development |
+| N-5.2 | An email address is verified before the account can post | Deferred — an account can be registered against an address its owner does not control |
+| N-5.3 | Sign-in attempts are rate limited | Deferred — Rails 8 ships `rate_limit`, cheap to add when it matters |
+| N-5.4 | Sessions expire after a period of inactivity | Deferred |
+| N-5.5 | The app is backed up, and restores are tested | Deferred — SQLite in a container volume, no backups |
 
 ---
 

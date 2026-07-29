@@ -1,6 +1,12 @@
 # JDSG-Group6 — Twitter Clone
 
-A Twitter/X-style social application built with Ruby on Rails, intended to be deployed on AWS.
+A Twitter/X-style social application built with Ruby on Rails.
+
+**This is a proof of concept**, built to exercise the stack and the delivery pipeline end to
+end. It is not a product and is not deployed anywhere. Where a decision trades production
+robustness for getting something working and understandable, it takes the second — those
+trades are called out where they are made rather than left implicit. Production hardening
+becomes real work if and when the AWS milestone is actually taken on.
 
 > **Status: milestone 1 built.** The Rails app is scaffolded in `web/` and the feed works
 > end-to-end. Authentication, follows and everything else remain unbuilt — see the
@@ -228,9 +234,10 @@ inherit. See `docs/adr/0001-authentication.md`.
 - `Current.user` for the request-scoped current user.
 - Reading stays public. `require_authentication` guards writes only.
 
-Password reset ships with the generator and needs a mailer. Nothing sends real email yet, so
-delivery stays in `letter_opener`-style development mode and production email is an open
-question below.
+Password reset ships with the generator, including a mailer. Nothing is wired to a delivery
+service and nothing will be — this is a proof of concept, so reset works against the
+development mailer and is not expected to send anything real. Likewise no email verification
+and no sign-in rate limiting; both are listed under deferred scope below.
 
 ### Milestone 3 — Post ownership and CRUD (F-3.x)
 
@@ -245,8 +252,8 @@ The slice that makes posts *belong* to someone.
 
 **The existing posts have no user.** The seeded rows are development data, so the migration
 backfills them to a single placeholder account rather than inventing a nullable column that
-would then need defending forever. This is only safe because nothing real is deployed — see
-the open question about it below.
+would then need defending forever. Safe here precisely because nothing real is deployed; a
+backfill that invents ownership would not be acceptable against production data.
 
 ### Milestone 4 — Navigation and profiles (F-4.x)
 
@@ -500,26 +507,24 @@ section it belongs to — this is not an append-only log.
   attributed to a deleted user? Account deletion is deliberately out of scope for now, but
   the answer shapes the schema before it is needed.
 
-**Authentication**
-
-- How does password reset actually send email in production? The Rails generator ships the
-  flow and a mailer, but nothing is wired to a delivery service. Until that is answered,
-  password reset works in development and silently does nothing in production.
-- Is email verification required before a new account can post? Without it, anyone can sign
-  up as any address. Against that: it is friction on exactly the 9% we want to convert.
-- Is there rate limiting on sign-in attempts? Rails 8 ships `rate_limit`, so this is cheap to
-  add, but it is a decision rather than a default.
-
 **Data**
 
-- The milestone 3 migration backfills existing posts to a placeholder user, which is only
-  acceptable because nothing real is deployed. Confirm that before it runs — once there is
-  production data, a backfill that invents ownership is not reversible.
 - Should `username` be changeable after registration? If yes, profile URLs are not stable and
   old links break unless historical usernames are retained.
 
-**Delivery and infrastructure**
+**Deferred by proof-of-concept scope**
 
-- Multi-environment strategy — `staging` and `production`, or production only at first?
-- Does the SonarQube scan run against SonarCloud or a self-hosted server?
+Real answers are needed only if this is ever deployed. Recorded so that the gap is known
+rather than forgotten:
+
+- Password reset email has no delivery service. The Rails generator ships the flow and a
+  mailer; nothing sends. Reset therefore works in development and does nothing in a deployed
+  environment.
+- No email verification, so an account can be registered against an address its owner does
+  not control.
+- No rate limiting on sign-in attempts. Rails 8 ships `rate_limit`, so this is cheap when it
+  matters.
+- `RAILS_FORCE_SSL` and `RAILS_ASSUME_SSL` default to off — see N-3.11.
+- Multi-environment strategy, and whether SonarQube runs against SonarCloud or a self-hosted
+  server.
 - Ranked full-text search, once the app is on PostgreSQL — see milestone 6.

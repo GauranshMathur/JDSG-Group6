@@ -4,8 +4,17 @@ Guidance for Claude Code when working in this repository.
 
 ## What this project is
 
-A Twitter/X-style social application, built with Ruby on Rails, eventually deployed to AWS.
-See `README.md` for the full plan, roadmap, and structure.
+A Twitter/X-style social application, built with Ruby on Rails.
+
+**It is a proof of concept.** Nothing is deployed and nothing holds real data. Where a
+decision trades production robustness for something working and understandable, take the
+second — and say so at the point you take it, rather than leaving it to be discovered.
+Gaps that only matter once deployed go in the "Deferred by proof-of-concept scope" table in
+`REQUIREMENTS.md` instead of quietly not existing.
+
+This does not license sloppiness in the things the project is actually exercising: the tests,
+the CI gates and the security scanning stay as they are. See `README.md` for the full plan,
+roadmap, and structure.
 
 `REQUIREMENTS.md` is the checklist of what the app must do and whether it does it yet.
 Update the status column there when a requirement's state actually changes.
