@@ -133,6 +133,21 @@ Do not introduce a new framework, database, job runner, or test library without 
   something a local run would have caught wastes a full pipeline.
 - Prefer several small, self-contained commits over one large one.
 
+**Run it before you push it.** Green specs are not evidence that the app works. Every bug
+that has reached `main` so far passed the suite first: `assume_ssl` returned 422 on every
+POST while GETs stayed healthy; a cursor with an unparseable timestamp rendered an empty feed;
+the sign-out control shipped unstyled because a spec asserting `response.body` includes a
+string cannot see CSS. So for any change that touches a request path or a view:
+
+```bash
+cd web && bin/rails server                # then actually load the page
+script/smoke-test http://localhost:3000   # register, post, read back, sign out
+```
+
+`script/smoke-test` is the same script CI runs, so a CI failure is reproducible in one
+command rather than by pushing again. When a change is visual, take a screenshot and put it
+in the pull request — describing a layout is not the same as looking at it.
+
 ## Commands
 
 ```bash
@@ -146,6 +161,7 @@ bundle exec brakeman         # Security static analysis
 bin/rails db:migrate         # Apply migrations
 bin/rails db:seed            # Sample posts for the feed
 bin/rails console            # REPL
+script/smoke-test            # End-to-end checks over HTTP against localhost:3000
 
 # From repo root
 docker build -t twitter-clone-web web                     # Build the image

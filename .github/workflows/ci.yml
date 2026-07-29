@@ -261,46 +261,12 @@ jobs:
       # broken so far has broken writes while leaving reads healthy — a CSRF
       # origin mismatch under assume_ssl returns 422 on POST and nothing at all
       # on GET. A green pipeline meant nothing here until this step existed.
-      - name: Smoke test posting
-        run: |
-          set -euo pipefail
-          marker="ci-smoke-${{ github.run_id }}"
-          cookies=$(mktemp)
-
-          token=$(curl -sS -c "$cookies" http://localhost:3000/ \
-            | grep -oE 'name="authenticity_token" value="[^"]+"' \
-            | head -1 | sed 's/.*value="//; s/"$//')
-          if [ -z "$token" ]; then
-            echo "Could not find a CSRF token on the feed page."
-            exit 1
-          fi
-
-          status=$(curl -sS -b "$cookies" -c "$cookies" -o /tmp/post-response \
-            -w '%{http_code}' -X POST http://localhost:3000/posts \
-            -H 'Accept: text/vnd.turbo-stream.html' \
-            --data-urlencode "authenticity_token=$token" \
-            --data-urlencode "post[author_name]=ci" \
-            --data-urlencode "post[body]=$marker")
-
-          if [ "$status" != "200" ]; then
-            echo "Creating a post returned HTTP $status, expected 200."
-            head -c 2000 /tmp/post-response
-            exit 1
-          fi
-
-          if ! grep -q 'turbo-stream action="prepend"' /tmp/post-response; then
-            echo "Response was not a turbo stream that prepends the post:"
-            head -c 2000 /tmp/post-response
-            exit 1
-          fi
-
-          # And it has to survive the round trip, not merely echo back.
-          if ! curl -sS http://localhost:3000/ | grep -q "$marker"; then
-            echo "The new post is not present on the feed after reloading it."
-            exit 1
-          fi
-
-          echo "Posted and rendered on the timeline."
+      #
+      # The checks live in web/script/smoke-test rather than inline here, so the
+      # same script runs against a local server. A failure in CI is reproducible
+      # with one command instead of by pushing again.
+      - name: Smoke test registering and posting
+        run: web/script/smoke-test http://localhost:3000
 
       # DAST: an unauthenticated baseline crawl of the running container.
       #
