@@ -127,10 +127,32 @@ at real scale, and each needs operational understanding this project does not ha
 them now would be building machinery for a load that does not exist — and untested resilience
 machinery is worse than none, because it is believed.
 
+## Measured so far
+
+Step 1 is done. Injecting a fixed 100ms into every query and timing one feed render, signed
+in, with a full page of 20 posts:
+
+| | Queries | Page render |
+| --- | --- | --- |
+| Before | 4 | 439 ms |
+| After | 2 | 240 ms |
+
+The two that went were both avoidable, and neither was visible on SQLite:
+
+- **A `COUNT`.** `next_cursor_for` asked the relation for its `size` before it had loaded, so
+  Active Record counted the rows and then fetched the same rows again to render them.
+- **A `users` lookup.** Almost every authenticated request reads `Current.user` — the masthead
+  alone does — but the session was fetched without it, so the user arrived in a second round
+  trip. `eager_load` makes it one join. This one was introduced by milestone 2.
+
+Neither is a large win at 0.1ms. Both are half the page at 100ms, which is the whole point:
+**query count is invisible until it is expensive, and by then it is everywhere.**
+
 ## Proposed order
 
-1. **N+1 guard.** Assert query counts in request specs. No infrastructure, catches the failure
-   that latency most amplifies, and lands before milestone 3 creates the N+1.
+1. ~~**N+1 guard.** Assert query counts in request specs.~~ **Done** — `feed_query_budget_spec.rb`
+   asserts the count is flat from one post to a full page, signed in and out, and that no
+   `COUNT` is issued to decide the pagination link. Milestone 3's N+1 will fail it.
 2. **Explicit timeouts, and pool sized above threads.** Replace the SQLite-only `timeout` with
    settings that mean something on both adapters.
 3. **A readiness endpoint that checks the database**, separate from `/up`.

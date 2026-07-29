@@ -25,8 +25,15 @@ module Authentication
       Current.session ||= find_session_by_cookie
     end
 
+    # eager_load rather than includes: with find_by, includes preloads in a
+    # second query, which is the round trip this is trying to avoid. eager_load
+    # forces a single LEFT JOIN.
+    #
+    # Almost every authenticated request reads Current.user — the masthead alone
+    # does — so fetching the user lazily costs an extra round trip on all of
+    # them. See docs/latency.md.
     def find_session_by_cookie
-      Session.find_by(id: cookies.signed[:session_id]) if cookies.signed[:session_id]
+      Session.eager_load(:user).find_by(id: cookies.signed[:session_id]) if cookies.signed[:session_id]
     end
 
     def request_authentication

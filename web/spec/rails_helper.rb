@@ -70,6 +70,7 @@ RSpec.configure do |config|
   # Use `build` / `create` directly instead of `FactoryBot.build` / `FactoryBot.create`.
   config.include FactoryBot::Syntax::Methods
   config.include AuthenticationHelpers, type: :request
+  config.include QueryCounter, type: :request
 
   # Filter lines from Rails gems in backtraces.
   config.filter_rails_from_backtrace!

@@ -192,8 +192,8 @@ it depends on the PostgreSQL path — which is itself an untested claim today (N
 
 | ID | Requirement | Status |
 | --- | --- | --- |
-| N-6.1 | Rendering the feed issues a constant number of queries, regardless of how many posts are on the page | Open — 2 today; milestone 3 introduces the N+1 that would break it |
-| N-6.2 | Query count per request is asserted in specs, so a regression fails the build rather than being noticed as slowness | Open — the cheapest guard, and needs no PostgreSQL |
+| N-6.1 | Rendering the feed issues a constant number of queries, regardless of how many posts are on the page | Met — 1 signed out, 2 signed in, flat from 1 post to a full page |
+| N-6.2 | Query count per request is asserted in specs, so a regression fails the build rather than being noticed as slowness | Met — `spec/requests/feed_query_budget_spec.rb`. Milestone 3's N+1 will fail it |
 | N-6.3 | The connection pool is larger than the Puma thread count | Open — equal when `RAILS_MAX_THREADS` is set, since both read it |
 | N-6.4 | Connection, checkout and statement timeouts are configured and adapter-neutral | Not met — the only timeout set is `timeout: 5000`, which is SQLite's `busy_timeout` and is ignored by PostgreSQL |
 | N-6.5 | A readiness endpoint reports unhealthy when the database is unreachable | Not met — `/up` checks only that the app booted, so it returns 200 against a dead database. Deliberately separate from `/up`, which should not restart the app because a dependency is down |
