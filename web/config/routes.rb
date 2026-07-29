@@ -1,4 +1,10 @@
 Rails.application.routes.draw do
+  # Authentication. The generator supplies sign-in/out and password reset;
+  # registration is ours.
+  resource :registration, only: [ :new, :create ]
+  resource :session, only: [ :new, :create, :destroy ]
+  resources :passwords, param: :token
+
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.

@@ -34,6 +34,8 @@ begin
 rescue ActiveRecord::PendingMigrationError => e
   abort e.to_s.strip
 end
+Rails.root.glob('spec/support/**/*.rb').sort.each { |file| require file }
+
 RSpec.configure do |config|
   # Remove this line if you're not using ActiveRecord or ActiveRecord fixtures
   config.fixture_paths = [
@@ -67,6 +69,7 @@ RSpec.configure do |config|
 
   # Use `build` / `create` directly instead of `FactoryBot.build` / `FactoryBot.create`.
   config.include FactoryBot::Syntax::Methods
+  config.include AuthenticationHelpers, type: :request
 
   # Filter lines from Rails gems in backtraces.
   config.filter_rails_from_backtrace!

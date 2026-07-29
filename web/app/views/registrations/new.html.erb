@@ -1,0 +1,44 @@
+<% content_for :title, "Sign up" %>
+
+<div class="auth">
+  <h1 class="auth__heading">Create an account</h1>
+
+  <%= form_with model: @user, url: registration_path, class: "auth__form" do |form| %>
+    <% if @user.errors.any? %>
+      <ul class="auth__errors">
+        <% @user.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    <% end %>
+
+    <%= form.label :email_address, "Email address", class: "auth__label" %>
+    <%= form.email_field :email_address,
+          class: "auth__input",
+          required: true,
+          autofocus: true,
+          autocomplete: "username" %>
+
+    <%= form.label :password, "Password", class: "auth__label" %>
+    <%= form.password_field :password,
+          class: "auth__input",
+          required: true,
+          autocomplete: "new-password",
+          minlength: User::MINIMUM_PASSWORD_LENGTH,
+          maxlength: 72 %>
+    <p class="auth__hint">At least <%= User::MINIMUM_PASSWORD_LENGTH %> characters.</p>
+
+    <%= form.label :password_confirmation, "Confirm password", class: "auth__label" %>
+    <%= form.password_field :password_confirmation,
+          class: "auth__input",
+          required: true,
+          autocomplete: "new-password",
+          maxlength: 72 %>
+
+    <%= form.submit "Sign up", class: "auth__submit" %>
+  <% end %>
+
+  <p class="auth__alternative">
+    Already have an account? <%= link_to "Sign in", new_session_path %>
+  </p>
+</div>
