@@ -1,0 +1,141 @@
+# CI/CD
+
+GitHub Actions, in two workflows.
+
+## `ci.yml` — pull requests only
+
+A **Detect changes** job runs first and classifies the pull request. If nothing outside
+documentation changed — only `*.md`, `docs/**` or `LICENSE` — then lint, the specs, the
+container build and SonarQube are all skipped. A documentation change cannot break RuboCop or
+stop the image booting, so building and scanning one costs minutes to learn nothing.
+
+Two deliberate details:
+
+- **The SAST job still runs.** Its Ruby-specific analysis is skipped, but the Trivy scan is
+  not: it also looks for committed secrets, and a credential pasted into a markdown file is
+  every bit as leaked as one in a Ruby file.
+- **The filtering is per job, not `paths-ignore` on the trigger.** This matters once `main`
+  has required status checks. A workflow skipped by `paths-ignore` never reports its checks
+  at all, so the pull request waits forever for a result that will never arrive. A job
+  skipped by an `if` reports a `skipped` conclusion, which satisfies the requirement.
+
+Anything that is not documentation counts as code. Deciding it that way round means a file
+type nobody anticipated is treated as code and gets checked, rather than slipping through.
+
+
+All work reaches the default branch through a pull request, and a pull request merges only
+once these pass. Jobs run in parallel:
+
+| Job | What it does | Fails the build on |
+| --- | --- | --- |
+| **Lint** | RuboCop with `rubocop-rails-omakase` | any offence |
+| **Test** | RSpec on SQLite | any failure |
+| **SAST** | Brakeman, bundler-audit, Trivy filesystem scan | any Brakeman warning, any gem CVE, any fixable HIGH/CRITICAL |
+| **Container** | Builds the image, Trivy image scan, boots it, OWASP ZAP baseline scan | any fixable HIGH/CRITICAL in the image, or the container failing to serve `/up` |
+| **SonarQube** | Quality gate | quality gate failure — skipped while unconfigured |
+
+On the security gates:
+
+- **Trivy fails on HIGH and CRITICAL, in both the filesystem and the image scan.** MEDIUM
+  and LOW are reported without blocking. A HIGH in the image is usually inherited from the
+  base image rather than written here, but inherited is not the same as acceptable — the
+  fix is to bump the base image or patch the package, and the build stays red until someone
+  does. Full results are also uploaded to GitHub code scanning.
+- **`ignore-unfixed` is on**, so only findings with an available fix count. A vulnerability
+  with no upstream patch cannot be actioned by any change in this repository; failing on it
+  would only teach everyone to ignore the gate.
+- **DAST reports but does not fail.** A baseline scan of a fresh Rails app flags
+  header-level warnings (CSP, permissions policy) that are real but out of scope for
+  milestone 1. Once triaged, flip `fail_action` to `true` so regressions block.
+
+The container job is also the proof that the image works: it starts the built image and
+polls `/up` until the app answers, so a broken image fails CI rather than a deployment.
+
+## `release.yml` — after merge to the default branch
+
+This workflow **ships; it does not re-test.**
+
+1. Derive the next semantic version from the Conventional Commits since the last tag.
+2. Stop here if nothing warrants a release.
+3. Build the image and push it to the **GitHub Container Registry** at
+   `ghcr.io/gauranshmathur/twitter-clone-web`, tagged with the version, `sha-<commit>` and
+   `latest`, for both `linux/amd64` and `linux/arm64`.
+4. **Then** create the git tag and the GitHub release.
+
+Nothing from `ci.yml` is repeated here. Every check ran on the pull request against this
+same code, and running the suite twice spends the same minutes to reach the same answer.
+The merged code is built exactly once, by this workflow.
+
+The ordering in steps 3 and 4 is deliberate. These jobs used to run in parallel, so the tag
+and release appeared while the build was still going — a pull of the just-announced version
+returned `not found` for several minutes, and a failed build would have left a published
+release pointing at an image that never existed.
+
+Because there is no gate on `main`, the pull request has to be a real one. Turn on
+**Require branches to be up to date before merging**: without it, two branches can each
+pass in isolation and still break once merged, and nothing downstream will catch it.
+
+**Registry: GHCR, for now.** It needs no provisioning — the built-in `GITHUB_TOKEN`
+authenticates the push, so there is no registry to create and no secret to manage. Amazon
+ECR is written into the workflow and commented out; it arrives with the AWS work, at which
+point the image can be pushed to both. Enabling it before the repository and the OIDC role
+exist only produces red builds.
+
+**Architectures:** release images are published as a manifest list covering `linux/amd64`
+and `linux/arm64`, so `docker pull` selects the right variant. Without the arm64 half, a
+pull on an Apple Silicon machine fails outright with `no matching manifest for
+linux/arm64`, and AWS Graviton instances want arm64 too. The arm64 build runs under QEMU on
+GitHub's x86 runners and is noticeably slower; if that becomes a problem the answer is a
+native arm64 runner, not dropping the platform.
+
+Pull request builds stay single-architecture. That image is only scanned and booted on the
+runner, and paying the emulation cost on every pull request buys no extra signal.
+
+**Image tagging:** every image carries an immutable `sha-<commit>` tag alongside the
+semantic version, so a deployment can always be pinned to an exact build.
+
+## Configuring SonarQube
+
+The SonarQube job checks for a `SONAR_TOKEN` secret and skips the scan when it is absent, so
+it does not block pull requests before the server exists. Add `SONAR_TOKEN` (and
+`SONAR_HOST_URL` for a self-hosted server) to repository secrets to turn it on. Project
+settings live in `sonar-project.properties`.
+
+## Versioning and releases
+
+The project follows [Semantic Versioning 2.0.0](https://semver.org/): `MAJOR.MINOR.PATCH`.
+
+- **MAJOR** — incompatible changes to a public interface or a migration that cannot be
+  rolled back cleanly.
+- **MINOR** — new functionality, backwards compatible. Most feature milestones land here.
+- **PATCH** — backwards-compatible bug fixes.
+
+While the app is pre-release it stays on `0.x.y`, where `0.MINOR.PATCH` signals that the
+public interface is not yet stable.
+
+Conventions:
+
+- Commits follow [Conventional Commits](https://www.conventionalcommits.org/)
+  (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`, `ci:`). This is what lets the
+  version bump and changelog be derived automatically.
+- Releases are git tags of the form `v0.3.1`, created by CI rather than by hand.
+- Release notes are generated by GitHub from the commits and pull requests in the range.
+
+Releases are automated in `.github/workflows/release.yml`: when a pull request lands on the
+default branch, the commit messages since the last tag decide the bump — `feat` gives a
+minor, `fix` and `perf` give a patch, `!` or a `BREAKING CHANGE` footer gives a major. A
+merge carrying only `docs`, `chore`, `test` or `ci` commits produces no tag and no image.
+
+This is why the commit prefix is functional rather than decorative: mislabel a feature as a
+chore and it silently never ships a version.
+
+**With squash merging, the squash commit message is the one that counts.** The individual
+commits on a branch collapse into a single commit on the default branch, so a branch full of
+tidy `feat:` commits still produces no release if the squash title is left as something
+generic. Keep the pull request title in Conventional Commit form — it is what GitHub offers
+as the default squash subject.
+
+The bump is derived by a short script in the workflow rather than an off-the-shelf action.
+The usual candidate, `github-tag-action`, cannot cut a *first* release: with no existing tag
+it has no range to diff against, reports "Analysis of 0 commits" and declines to release.
+Treating "no tag yet" as "consider the whole history" is the only behavioural difference.
