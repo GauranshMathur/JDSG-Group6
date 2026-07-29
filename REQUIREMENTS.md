@@ -42,7 +42,7 @@ production-ready, and so the work is visible if it ever is deployed.
 | F-2.2 | Email addresses are unique, case-insensitively | Met — addresses are normalised to lower case on write, so the plain unique index enforces it without an adapter-specific functional index |
 | F-2.3 | A registered user can sign in and sign out | Met |
 | F-2.4 | Signing out revokes the session server-side, not only in the browser | Met — `terminate_session` destroys the `Session` row |
-| F-2.5 | Reading the feed, profiles and tag pages never requires an account | Met for the feed; profiles and tag pages do not exist yet |
+| F-2.5 | Reading the feed, profiles and tag pages never requires an account | Met for the feed and profiles; tag pages arrive with milestone 5 |
 | F-2.6 | Creating, editing and deleting require a signed-in user | Met for create; edit and delete arrive with milestone 3 |
 | F-2.7 | A user can reset a forgotten password | Met — against the development mailer only; see N-5.1 |
 
@@ -61,12 +61,12 @@ production-ready, and so the work is visible if it ever is deployed.
 
 | ID | Requirement | Status |
 | --- | --- | --- |
-| F-4.1 | A sidebar provides navigation between the feed, the user's profile, and signing in or out | Planned |
-| F-4.2 | Each user has a unique, case-insensitive, URL-safe username | Planned |
-| F-4.3 | A public profile page lists that user's posts, newest first | Planned |
-| F-4.4 | A user can edit their own display name and bio | Planned |
-| F-4.5 | A user cannot edit anyone else's profile | Planned |
-| F-4.6 | A username is fixed at registration — profile URLs never break, and a released name can never be claimed | Planned — [ADR 0006](docs/adr/0006-immutable-usernames.md) |
+| F-4.1 | A sidebar provides navigation between the feed, the user's profile, and signing in or out | Met — a layout partial on every page; folds into a top bar on narrow screens |
+| F-4.2 | Each user has a unique, case-insensitive, URL-safe username | Met — stored lower-cased behind a plain unique index, the same mechanism as F-2.2 |
+| F-4.3 | A public profile page lists that user's posts, newest first | Met — `/@username`, same ordering and cursor pagination as the feed |
+| F-4.4 | A user can edit their own display name and bio | Met |
+| F-4.5 | A user cannot edit anyone else's profile | Met — the edit routes carry no id and act on the session's user, so a route to anyone else's profile does not exist |
+| F-4.6 | A username is fixed at registration — profile URLs never break, and a released name can never be claimed | Met — `attr_readonly` raises on assignment, and only registration's permit list includes it. [ADR 0006](docs/adr/0006-immutable-usernames.md) |
 
 ### 1.5 Hashtags (milestone 5)
 
@@ -106,7 +106,7 @@ Recorded so the shape of the system is visible; none are being built yet.
 
 | ID | Requirement | Status |
 | --- | --- | --- |
-| D-1 | Reading is public; only writing requires an account (90-9-1: most visitors are lurkers) | Planned |
+| D-1 | Reading is public; only writing requires an account (90-9-1: most visitors are lurkers) | Met — the feed and profiles render signed out; `create`, `update` and `destroy` are guarded |
 | D-2 | Posting is reachable from the feed itself, not behind a separate page | Met |
 | D-3 | Power-user tooling — bulk management, drafts, scheduling — stays absent until the first two groups are served | Met — by omission |
 
@@ -194,8 +194,8 @@ it depends on the PostgreSQL path — which is itself an untested claim today (N
 
 | ID | Requirement | Status |
 | --- | --- | --- |
-| N-6.1 | Rendering the feed issues a constant number of queries, regardless of how many posts are on the page | Met — 1 signed out, 2 signed in, flat from 1 post to a full page |
-| N-6.2 | Query count per request is asserted in specs, so a regression fails the build rather than being noticed as slowness | Met — `spec/requests/feed_query_budget_spec.rb`. Milestone 3's N+1 will fail it |
+| N-6.1 | Rendering the feed issues a constant number of queries, regardless of how many posts are on the page | Met — 1 signed out, 2 signed in, flat from 1 post to a full page. Profile pages hold the same property at 2 and 3, the extra query being the username lookup |
+| N-6.2 | Query count per request is asserted in specs, so a regression fails the build rather than being noticed as slowness | Met — `feed_query_budget_spec.rb` and `profile_query_budget_spec.rb` |
 | N-6.3 | The connection pool is larger than the Puma thread count | Open — equal when `RAILS_MAX_THREADS` is set, since both read it |
 | N-6.4 | Connection, checkout and statement timeouts are configured and adapter-neutral | Not met — the only timeout set is `timeout: 5000`, which is SQLite's `busy_timeout` and is ignored by PostgreSQL |
 | N-6.5 | A readiness endpoint reports unhealthy when the database is unreachable | Not met — `/up` checks only that the app booted, so it returns 200 against a dead database. Deliberately separate from `/up`, which should not restart the app because a dependency is down |

@@ -9,8 +9,8 @@ reach it, not before.
 | 1 | **The feed** — post creation and timeline rendering | **Done** |
 | 2 | **Authentication** — sign up, sign in, sign out, sessions | **Done** |
 | 3 | **Post ownership and CRUD** — posts belong to users; edit and delete your own | **Done** |
-| 4 | **Navigation and profiles** — sidebar shell, profile pages, edit your profile | Next |
-| 5 | **Hashtags** — parsed from post bodies, browsable tag pages | Planned |
+| 4 | **Navigation and profiles** — sidebar shell, profile pages, edit your profile | **Done** |
+| 5 | **Hashtags** — parsed from post bodies, browsable tag pages | Next |
 | 6 | **Search** — find posts and people from the sidebar | Planned |
 | 7 | Follows — follow/unfollow, following-only feed | Later |
 | 8 | Engagement — likes, reposts, replies | Later |
@@ -130,7 +130,22 @@ backfills them to a single placeholder account rather than inventing a nullable 
 would then need defending forever. Safe here precisely because nothing real is deployed; a
 backfill that invents ownership would not be acceptable against production data.
 
-### Milestone 4 — Navigation and profiles (F-4.x)
+### Milestone 4 — Navigation and profiles (F-4.x) — **built**
+
+Per-requirement status is in [`REQUIREMENTS.md`](../REQUIREMENTS.md) (F-4.x). The plan below
+shipped as written. Three things landed alongside it worth naming:
+
+- **A bug the specs could not have named:** on a public (`allow_unauthenticated_access`)
+  page, nothing resumed the session before the view read `Current.user` — the feed only
+  escaped because its template happens to call `authenticated?` first, and the new profile
+  page did not, so it showed every visitor a stranger's page, owner included. Session resume
+  is now an unconditional `before_action`; only *requiring* a session stays skippable.
+- Cursor pagination moved from `PostsController` into a shared `TimelinePagination` concern,
+  since profiles page through posts the same way — and tag pages will next milestone.
+- Profile pages got their own query budget spec: 2 queries signed out, 3 signed in, flat
+  however many posts render. The extra query over the feed's budget is the username lookup.
+
+The original plan, unchanged:
 
 - A sidebar as the application shell: Feed, Profile, Sign in/out — Search joins it in
   milestone 6. Rendered from a layout partial, not duplicated per page. It replaces the
