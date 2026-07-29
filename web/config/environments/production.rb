@@ -21,11 +21,21 @@ Rails.application.configure do
   # Enable serving of images, stylesheets, and JavaScripts from an asset server.
   # config.asset_host = "http://assets.example.com"
 
-  # Assume all access to the app is happening through a SSL-terminating reverse proxy.
-  config.assume_ssl = true
-
-  # Force all access to the app over SSL, use Strict-Transport-Security, and use secure cookies.
-  config.force_ssl = true
+  # SSL assumption and enforcement, both off by default.
+  #
+  # There is nowhere to deploy to yet, so the only thing that actually runs this
+  # image is a laptop or CI, over plain HTTP. Defaulting these on made the app look
+  # healthy and quietly refuse every post: with assume_ssl on, Rails builds
+  # request.base_url as https:// while the browser sends an http:// Origin header,
+  # the CSRF origin check rejects the mismatch, and form submissions fail with 422
+  # InvalidAuthenticityToken. GET requests are unaffected, so nothing looks wrong.
+  #
+  # TURN BOTH ON when the app is deployed behind TLS — set RAILS_ASSUME_SSL=true and
+  # RAILS_FORCE_SSL=true in the environment. Without them there is no HSTS, no
+  # http-to-https redirect, and session cookies are not marked secure. This is
+  # tracked as N-3.11 in REQUIREMENTS.md so it cannot be quietly forgotten.
+  config.assume_ssl = ENV.fetch("RAILS_ASSUME_SSL", "false") == "true"
+  config.force_ssl = ENV.fetch("RAILS_FORCE_SSL", "false") == "true"
 
   # Skip http-to-https redirect for the default health check endpoint.
   # config.ssl_options = { redirect: { exclude: ->(request) { request.path == "/up" } } }

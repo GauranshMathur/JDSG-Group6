@@ -193,7 +193,25 @@ bin/rails db:migrate               # Apply migrations
 bin/rails console                  # REPL
 ```
 
-Building and running the container, from the repository root:
+Running the published image:
+
+```bash
+docker run --rm -p 3000:80 \
+  -e SECRET_KEY_BASE=$(openssl rand -hex 64) \
+  -v twitter-clone-data:/rails/storage \
+  ghcr.io/gauranshmathur/twitter-clone-web:latest
+```
+
+Then open <http://localhost:3000>. The port mapping is `3000:80` because the container
+listens on 80. `SECRET_KEY_BASE` is required — the image runs in production mode and will
+not boot without one. The volume keeps the SQLite database between runs; drop it and posts
+disappear when the container exits.
+
+**SSL is off by default**, which is what makes the above work over plain HTTP. Set
+`RAILS_ASSUME_SSL=true` and `RAILS_FORCE_SSL=true` when the app is deployed behind TLS —
+see [Infrastructure](#infrastructure).
+
+Or build it yourself, from the repository root:
 
 ```bash
 docker build -t twitter-clone-web web
@@ -321,6 +339,10 @@ Sketch of what will need to be decided:
 - Networking — VPC, subnets, security groups, ALB.
 - Storage — S3 for user-uploaded media (milestone 6).
 - Secrets — Secrets Manager or SSM Parameter Store.
+- **TLS — set `RAILS_ASSUME_SSL=true` and `RAILS_FORCE_SSL=true` on the deployed service.**
+  They default to off so the image runs over plain HTTP locally, which means a deployment
+  that forgets them gets no HSTS, no https redirect and non-secure session cookies.
+  Tracked as N-3.11 in `REQUIREMENTS.md`.
 - Observability — CloudWatch logs and metrics; error tracking TBD.
 - State — Terraform remote state in S3 with DynamoDB locking.
 
