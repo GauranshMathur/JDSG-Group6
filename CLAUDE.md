@@ -172,15 +172,13 @@ docker compose -f infra/docker/docker-compose.yml up -d   # Postgres, only when 
 
 ## Current milestone
 
-**Milestone 5 — hashtags.** Milestones 5 and 6 are planned in detail in
-`docs/roadmap.md`; read that and the matching requirement IDs in `REQUIREMENTS.md` before
-starting. Build them in order, one at a time — the plan exists so
-that a change touching auth, ownership, navigation, tagging and search all at once never gets
-written.
+**Milestone 5 — engagement and hashtags.** The milestone has four slices — likes, reposts,
+replies, then hashtags — planned in detail in `docs/roadmap.md`. Read that and the matching
+requirement IDs (F-5.x) in `REQUIREMENTS.md` before starting. Build slices in order, one at
+a time — each is a PR, and each ends with the app working.
 
-Anything outside the current milestone — follows, likes, replies, media, notifications,
-account deletion — is later. If a task seems to require one of them, say so and ask rather
-than expanding scope.
+Anything outside the current milestone — follows, media, notifications, account deletion —
+is later. If a task seems to require one of them, say so and ask rather than expanding scope.
 
 Two rules that this block of work depends on:
 
