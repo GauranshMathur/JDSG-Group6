@@ -10,20 +10,19 @@ reach it, not before.
 | 2 | **Authentication** — sign up, sign in, sign out, sessions | **Done** |
 | 3 | **Post ownership and CRUD** — posts belong to users; edit and delete your own | **Done** |
 | 4 | **Navigation and profiles** — sidebar shell, profile pages, edit your profile | **Done** |
-| 5 | **Hashtags** — parsed from post bodies, browsable tag pages | Next |
+| 5 | **Engagement and hashtags** — likes, reposts, replies, `#tag` pages | Next |
 | 6 | **Search** — find posts and people from the sidebar | Planned |
 | 7 | Follows — follow/unfollow, following-only feed | Later |
-| 8 | Engagement — likes, reposts, replies | Later |
-| 9 | Media — image uploads on posts | Later |
-| 10 | Notifications | Later |
-| 11 | AWS deployment — Terraform, ECS/Fargate, RDS, ElastiCache | TODO |
+| 8 | Media — image uploads on posts | Later |
+| 9 | Notifications | Later |
+| 10 | AWS deployment — Terraform, ECS/Fargate, RDS, ElastiCache | TODO |
 
 Milestones 0 and 1 were built together, since a feed needs an app to live in.
 
 Milestones 2–6 are the current block of work: authentication, full CRUD on posts, profiles,
-hashtags and search. They are listed separately rather than as one milestone because each is
-independently shippable, and because a single change touching auth, ownership, navigation,
-tagging and search at once is not reviewable.
+engagement with hashtags, and search. They are listed separately rather than as one milestone
+because each is independently shippable, and because a single change touching auth, ownership,
+navigation, engagement, tagging and search at once is not reviewable.
 
 ## Milestone 1 — The Feed
 
@@ -170,7 +169,56 @@ The original plan, unchanged:
   username when unset. This retires milestone 3's stopgap of showing the email local part.
 - Avatars need file storage, so they wait for the media milestone.
 
-### Milestone 5 — Hashtags (F-5.x)
+### Milestone 5 — Engagement and hashtags (F-5.x)
+
+The milestone that makes the feed interactive. Four independently shippable slices, built in
+order — each is a PR or a small series, and each ends with the app working.
+
+#### Slice A — Likes (F-5.6, F-5.7)
+
+The simplest engagement action: a like is a row in a join table, nothing more.
+
+- `Like` model: `user_id` + `post_id`, compound unique index, foreign keys.
+- Counter cache `posts.likes_count` so displaying the count never N+1s.
+- Like/unlike toggle via Turbo Stream — the button swaps state without a page reload.
+- A signed-in user can like any post, including their own. Disallowing self-likes is
+  complexity that solves nothing in a proof of concept.
+- Signed-out visitors see the count but no toggle.
+
+#### Slice B — Reposts (F-5.8, F-5.9)
+
+Structurally identical to likes — a join table, a counter cache, a toggle.
+
+- `Repost` model: `user_id` + `post_id`, compound unique index, foreign keys.
+- Counter cache `posts.reposts_count`.
+- Repost/un-repost toggle via Turbo Stream.
+- **No timeline fan-out.** On Twitter, a repost puts the original in your followers'
+  timelines. There is no follow graph yet, so reposts are a count only — the original post
+  stays where it is. Fan-out arrives with the follows milestone.
+- No quote posts. Those are a different model (a post that embeds another) and are out of
+  scope.
+
+#### Slice C — Replies (F-5.10, F-5.11, F-5.12)
+
+The first change to the `Post` model itself since milestone 3.
+
+- Self-referential `parent_id` on `posts`, nullable foreign key, indexed. A reply is a post
+  with a parent — not a separate model. This keeps the body validation, authorship and CRUD
+  rules identical for replies and top-level posts.
+- Counter cache `posts.replies_count`.
+- A **post detail page** at `/posts/:id` showing the post and its direct replies in
+  chronological order. The detail page is new — until now, posts only appear on feeds.
+- A composer on the detail page for replying, scoped to the parent post.
+- The main timeline and profile pages show **top-level posts only** (`WHERE parent_id IS
+  NULL`). Replies are visible on the detail page, not scattered through the feed.
+- "Replying to @username" context on the detail page above each reply.
+- Replies are flat. A reply to a reply is allowed (it sets its own `parent_id`), but there
+  is no thread unwinding or nested display — every reply page lists its direct children only.
+
+#### Slice D — Hashtags (F-5.1 through F-5.5)
+
+Unchanged from the original plan. [ADR 0004](adr/0004-hashtags-and-search.md) covers the
+join-table decision.
 
 - `#tag` parsed out of the post body on save.
 - `Tag` and a `PostTag` join table, rather than `LIKE '%#tag%'` — a join gives an indexed
@@ -180,6 +228,18 @@ The original plan, unchanged:
 - `/tags/:name` lists posts carrying that tag, reusing the existing timeline and cursor
   pagination.
 - Tags are normalised to lower case on write so `#Rails` and `#rails` are one tag.
+
+#### Design notes for the milestone
+
+- **Counter caches over live counts.** Each engagement type adds a `_count` column to
+  `posts`, maintained by Rails's `counter_cache: true`. This keeps the timeline query flat —
+  no subqueries, no N+1. The cost is a write on both the join table and the post row on
+  every like/repost/reply, which is fine at this scale.
+- **No new query in the timeline.** Likes, reposts and reply counts are columns on `posts`,
+  so the timeline query stays the same. Whether the current user has liked or reposted a
+  post is one query per page (batch lookup), not per post.
+- **Turbo Streams for toggles.** Like and repost are instant toggles that do not navigate.
+  Turbo Streams replace the button partial in place, the same pattern as the post composer.
 
 ### Milestone 6 — Search (F-6.x)
 
@@ -195,6 +255,5 @@ PostgreSQL, not before.
 
 ### Explicitly not in this block
 
-Follows and a following-only timeline, likes, reposts, replies, media and avatars,
-notifications, moderation and rate limiting. Each is a later milestone; none should be
-started "while we're in there".
+Follows and a following-only timeline, media and avatars, notifications, moderation and rate
+limiting. Each is a later milestone; none should be started "while we're in there".

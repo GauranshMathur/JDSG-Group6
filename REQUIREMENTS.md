@@ -68,7 +68,7 @@ production-ready, and so the work is visible if it ever is deployed.
 | F-4.5 | A user cannot edit anyone else's profile | Met — the edit routes carry no id and act on the session's user, so a route to anyone else's profile does not exist |
 | F-4.6 | A username is fixed at registration — profile URLs never break, and a released name can never be claimed | Met — `attr_readonly` raises on assignment, and only registration's permit list includes it. [ADR 0006](docs/adr/0006-immutable-usernames.md) |
 
-### 1.5 Hashtags (milestone 5)
+### 1.5 Engagement and hashtags (milestone 5)
 
 | ID | Requirement | Status |
 | --- | --- | --- |
@@ -77,6 +77,13 @@ production-ready, and so the work is visible if it ever is deployed.
 | F-5.3 | Tags are normalised to lower case, so `#Rails` and `#rails` are one tag | Planned |
 | F-5.4 | Hashtags render as links in a post body | Planned |
 | F-5.5 | A tag page lists every post carrying that tag, with the same ordering and pagination as the feed | Planned |
+| F-5.6 | A signed-in user can like and unlike a post | Planned |
+| F-5.7 | A post displays its like count | Planned |
+| F-5.8 | A signed-in user can repost and un-repost a post | Planned |
+| F-5.9 | A post displays its repost count | Planned |
+| F-5.10 | A signed-in user can reply to a post | Planned |
+| F-5.11 | A post detail page lists the post and its direct replies | Planned |
+| F-5.12 | A post displays its reply count | Planned |
 
 ### 1.6 Search (milestone 6)
 
@@ -95,10 +102,9 @@ Recorded so the shape of the system is visible; none are being built yet.
 | --- | --- | --- |
 | F-7.1 | A user can follow and unfollow another user | Later |
 | F-7.2 | The feed can be filtered to accounts the user follows | Later |
-| F-8.1 | A user can like, repost and reply to a post | Later |
-| F-9.1 | A post can carry one or more images | Later |
-| F-9.2 | A user can set an avatar | Later |
-| F-10.1 | A user is notified of activity on their posts | Later |
+| F-8.1 | A post can carry one or more images | Later |
+| F-8.2 | A user can set an avatar | Later |
+| F-9.1 | A user is notified of activity on their posts | Later |
 
 ---
 

@@ -34,7 +34,8 @@ Milestone 3 ships no limit — a post can be rewritten a minute or a year after 
 matters more once replies exist, because a reply can be made to agree with something that is
 then changed underneath it.
 
-**When:** with replies, which are milestone 8. Not urgent before then.
+**When:** with replies, which are now part of milestone 5. Needs answering before slice C
+(replies) ships.
 
 ### Should duplicate posts be prevented?
 

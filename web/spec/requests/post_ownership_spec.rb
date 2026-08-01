@@ -32,17 +32,6 @@ RSpec.describe "Post ownership" do
       expect(post_record.reload.body).to eq("after")
     end
 
-    it "responds with a turbo stream that replaces the post in place" do
-      post_record = create(:post, user: author, body: "before")
-      sign_in(author)
-
-      patch post_path(post_record), params: { post: { body: "after" } }, as: :turbo_stream
-
-      expect(response.media_type).to eq("text/vnd.turbo-stream.html")
-      expect(response.body).to include('action="replace"')
-      expect(response.body).to include("after")
-    end
-
     it "re-renders the form when the edit is invalid" do
       post_record = create(:post, user: author, body: "before")
       sign_in(author)

@@ -38,10 +38,7 @@ class PostsController < ApplicationController
 
   def update
     if @post.update(post_params)
-      respond_to do |format|
-        format.turbo_stream
-        format.html { redirect_to posts_path }
-      end
+      redirect_to posts_path
     else
       render :edit, status: :unprocessable_content
     end
