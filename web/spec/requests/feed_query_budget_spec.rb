@@ -16,8 +16,9 @@ RSpec.describe "Feed query budget" do
   # the timeline for a signed-out visitor.
   ANONYMOUS_BUDGET = 1
 
-  # Plus one lookup to resume the session from its cookie.
-  SIGNED_IN_BUDGET = 2
+  # Plus one lookup to resume the session from its cookie, and one batch lookup
+  # for which posts the current user has liked.
+  SIGNED_IN_BUDGET = 3
 
   describe "signed out" do
     it "issues a constant number of queries regardless of the number of posts" do
@@ -37,7 +38,7 @@ RSpec.describe "Feed query budget" do
       sql = queries_in { get posts_path }
 
       expect(response.body).to include("Load older posts")
-      expect(sql.grep(/COUNT/i)).to be_empty
+      expect(sql.grep(/\bCOUNT\s*\(/i)).to be_empty
     end
 
     it "still issues a constant number of queries on a later page" do

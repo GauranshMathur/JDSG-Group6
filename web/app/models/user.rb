@@ -12,6 +12,7 @@ class User < ApplicationRecord
   # taking the posts with it. The foreign key refuses it at the database level
   # too; this makes the refusal an error you can read.
   has_many :posts, dependent: :restrict_with_error
+  has_many :likes, dependent: :destroy
 
   # Chosen at registration and never changed — ADR 0006. attr_readonly makes
   # that the model's rule rather than a convention: assigning to it on a

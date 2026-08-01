@@ -21,4 +21,10 @@ module TimelinePagination
     def next_cursor_for(posts)
       posts.last.cursor if posts.size == PAGE_SIZE
     end
+
+    def liked_post_ids_for(posts)
+      return Set.new unless Current.user
+
+      Current.user.likes.where(post_id: posts.map(&:id)).pluck(:post_id).to_set
+    end
 end

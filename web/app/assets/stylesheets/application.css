@@ -168,6 +168,63 @@ body {
   overflow-wrap: anywhere;
 }
 
+/* Post footer — engagement actions (likes, reposts, replies) */
+
+.post__footer {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.5rem;
+  padding-top: 0.375rem;
+}
+
+.like-button {
+  display: inline-flex;
+}
+
+.like-button .button_to {
+  margin: 0;
+}
+
+.like-button__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: none;
+  border: 0;
+  padding: 0.125rem 0.375rem;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 0.875rem;
+  color: var(--colour-muted);
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.like-button__toggle:hover {
+  color: #e0245e;
+}
+
+.like-button__toggle--liked {
+  color: #e0245e;
+}
+
+.like-button__toggle--liked:hover {
+  color: var(--colour-muted);
+}
+
+.like-button__toggle--static {
+  cursor: default;
+}
+
+.like-button__icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.like-button__count {
+  font-size: 0.8125rem;
+}
+
 /* Pagination */
 
 .pagination {

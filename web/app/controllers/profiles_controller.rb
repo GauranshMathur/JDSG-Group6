@@ -5,11 +5,10 @@ class ProfilesController < ApplicationController
   allow_unauthenticated_access only: :show
 
   def show
-    # Stored lower-cased, so /@Ada finds ada rather than 404ing on a
-    # capitalisation the owner never chose.
     @user = User.find_by!(username: params[:username].downcase)
     @posts = page_of_posts(@user.posts.timeline)
     @next_cursor = next_cursor_for(@posts)
+    @liked_post_ids = liked_post_ids_for(@posts)
   end
 
   def edit

@@ -1,0 +1,18 @@
+<div id="<%= dom_id(post, :like) %>" class="like-button">
+  <% if authenticated? && liked %>
+    <%= button_to post_like_path(post), method: :delete, class: "like-button__toggle like-button__toggle--liked" do %>
+      <span class="like-button__icon" aria-hidden="true">&hearts;</span>
+      <span class="like-button__count"><%= post.likes_count %></span>
+    <% end %>
+  <% elsif authenticated? %>
+    <%= button_to post_like_path(post), method: :post, class: "like-button__toggle" do %>
+      <span class="like-button__icon" aria-hidden="true">&hearts;</span>
+      <span class="like-button__count"><%= post.likes_count %></span>
+    <% end %>
+  <% else %>
+    <span class="like-button__toggle like-button__toggle--static">
+      <span class="like-button__icon" aria-hidden="true">&hearts;</span>
+      <span class="like-button__count"><%= post.likes_count %></span>
+    </span>
+  <% end %>
+</div>

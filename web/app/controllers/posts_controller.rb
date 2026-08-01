@@ -14,6 +14,7 @@ class PostsController < ApplicationController
     @post = Post.new
     @posts = page_of_posts(Post.timeline)
     @next_cursor = next_cursor_for(@posts)
+    @liked_post_ids = liked_post_ids_for(@posts)
   end
 
   def create

@@ -26,4 +26,9 @@
   </header>
 
   <p class="post__body"><%= post.body %></p>
+
+  <footer class="post__footer">
+    <%= render "likes/like_button", post: post,
+          liked: (defined?(liked_post_ids) && liked_post_ids&.include?(post.id)) %>
+  </footer>
 </article>
