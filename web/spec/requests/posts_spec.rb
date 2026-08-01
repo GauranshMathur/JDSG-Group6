@@ -1,6 +1,7 @@
 require "rails_helper"
 
 RSpec.describe "Posts" do
+  # F-1.x, F-2.5, F-2.6, F-3.6
   describe "GET /posts" do
     # F-2.5. The timeline is readable without an account, which is the 90 in the
     # 90-9-1 rule — see docs/design-principles.md.

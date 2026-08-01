@@ -1,5 +1,6 @@
 require "rails_helper"
 
+# F-5.6, F-5.7
 RSpec.describe "Likes" do
   let(:user) { create(:user) }
   let(:post_record) { create(:post) }

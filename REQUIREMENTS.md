@@ -77,8 +77,8 @@ production-ready, and so the work is visible if it ever is deployed.
 | F-5.3 | Tags are normalised to lower case, so `#Rails` and `#rails` are one tag | Planned |
 | F-5.4 | Hashtags render as links in a post body | Planned |
 | F-5.5 | A tag page lists every post carrying that tag, with the same ordering and pagination as the feed | Planned |
-| F-5.6 | A signed-in user can like and unlike a post | Planned |
-| F-5.7 | A post displays its like count | Planned |
+| F-5.6 | A signed-in user can like and unlike a post | Met — `Like` join table with counter cache, Turbo Stream toggle |
+| F-5.7 | A post displays its like count | Met — `posts.likes_count` counter cache, batch lookup for current-user state |
 | F-5.8 | A signed-in user can repost and un-repost a post | Planned |
 | F-5.9 | A post displays its repost count | Planned |
 | F-5.10 | A signed-in user can reply to a post | Planned |
@@ -200,7 +200,7 @@ it depends on the PostgreSQL path — which is itself an untested claim today (N
 
 | ID | Requirement | Status |
 | --- | --- | --- |
-| N-6.1 | Rendering the feed issues a constant number of queries, regardless of how many posts are on the page | Met — 1 signed out, 2 signed in, flat from 1 post to a full page. Profile pages hold the same property at 2 and 3, the extra query being the username lookup |
+| N-6.1 | Rendering the feed issues a constant number of queries, regardless of how many posts are on the page | Met — 1 signed out, 3 signed in (session + posts + batch like lookup), flat from 1 post to a full page. Profile pages hold the same property at 2 signed out and 4 signed in, the extra query being the username lookup |
 | N-6.2 | Query count per request is asserted in specs, so a regression fails the build rather than being noticed as slowness | Met — `feed_query_budget_spec.rb` and `profile_query_budget_spec.rb` |
 | N-6.3 | The connection pool is larger than the Puma thread count | Open — equal when `RAILS_MAX_THREADS` is set, since both read it |
 | N-6.4 | Connection, checkout and statement timeouts are configured and adapter-neutral | Not met — the only timeout set is `timeout: 5000`, which is SQLite's `busy_timeout` and is ignored by PostgreSQL |
@@ -216,7 +216,7 @@ Explicitly not being built, to keep the current milestone honest:
 
 - The follow graph and any personalised or ranked timeline. "Your feed" in milestones 2–6
   means the posts you wrote, not a timeline only you can see.
-- Likes, reposts and replies.
+- Reposts, replies and hashtags — in progress as part of milestone 5.
 - Media — images on posts, and avatars on profiles.
 - Notifications.
 - Account deletion.
