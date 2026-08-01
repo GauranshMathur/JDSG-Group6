@@ -1,5 +1,6 @@
 require "rails_helper"
 
+# F-5.6, F-5.7
 RSpec.describe Like do
   describe "validations" do
     it "requires a user and a post" do

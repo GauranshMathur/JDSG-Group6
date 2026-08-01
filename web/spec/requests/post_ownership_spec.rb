@@ -1,9 +1,9 @@
 require "rails_helper"
 
-# Editing and deleting your own posts, and — the part worth the most attention —
-# not anyone else's.
+# F-3.2, F-3.3, F-3.4, F-3.5. Editing and deleting your own posts, and — the
+# part worth the most attention — not anyone else's.
 #
-# Authorisation here is by scoping: every write loads the post through
+# Authorisation here is by scoping (F-3.5): every write loads the post through
 # Current.user.posts, so another account's row is not found and raises. These
 # specs assert the outcome rather than the mechanism, so they keep their value
 # if the implementation changes.
@@ -11,6 +11,7 @@ RSpec.describe "Post ownership" do
   let(:author) { create(:user) }
   let(:someone_else) { create(:user) }
 
+  # F-3.2
   describe "editing" do
     it "shows the author the edit form for their own post" do
       post_record = create(:post, user: author, body: "mine")
@@ -43,6 +44,7 @@ RSpec.describe "Post ownership" do
     end
   end
 
+  # F-3.3
   describe "deleting" do
     it "deletes the author's own post" do
       post_record = create(:post, user: author)
@@ -63,7 +65,7 @@ RSpec.describe "Post ownership" do
     end
   end
 
-  # F-3.4. The cases that would matter if this were real.
+  # F-3.4, F-3.5. The cases that would matter if this were real.
   describe "someone else's post" do
     let!(:post_record) { create(:post, user: author, body: "not yours") }
 
@@ -89,6 +91,7 @@ RSpec.describe "Post ownership" do
     end
   end
 
+  # F-2.6
   describe "when signed out" do
     let!(:post_record) { create(:post, user: author, body: "not yours") }
 
@@ -112,6 +115,7 @@ RSpec.describe "Post ownership" do
     end
   end
 
+  # F-3.4
   describe "the controls in the feed" do
     it "offers edit and delete on the reader's own posts" do
       create(:post, user: author, body: "mine")
