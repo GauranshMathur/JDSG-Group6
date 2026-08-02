@@ -225,6 +225,54 @@ body {
   font-size: 0.8125rem;
 }
 
+.repost-button {
+  display: inline-flex;
+}
+
+.repost-button .button_to {
+  margin: 0;
+}
+
+.repost-button__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: none;
+  border: 0;
+  padding: 0.125rem 0.375rem;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 0.875rem;
+  color: var(--colour-muted);
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.repost-button__toggle:hover {
+  color: #17bf63;
+}
+
+.repost-button__toggle--reposted {
+  color: #17bf63;
+}
+
+.repost-button__toggle--reposted:hover {
+  color: var(--colour-muted);
+}
+
+.repost-button__toggle--static {
+  cursor: default;
+}
+
+.repost-button__icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.repost-button__count {
+  font-size: 0.8125rem;
+}
+
 /* Pagination */
 
 .pagination {

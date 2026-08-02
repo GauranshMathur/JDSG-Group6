@@ -16,9 +16,9 @@ RSpec.describe "Feed query budget" do
   # the timeline for a signed-out visitor.
   ANONYMOUS_BUDGET = 1
 
-  # Plus one lookup to resume the session from its cookie, and one batch lookup
-  # for which posts the current user has liked.
-  SIGNED_IN_BUDGET = 3
+  # Plus one lookup to resume the session from its cookie, and batch lookups
+  # for which posts the current user has liked and reposted.
+  SIGNED_IN_BUDGET = 4
 
   describe "signed out" do
     it "issues a constant number of queries regardless of the number of posts" do

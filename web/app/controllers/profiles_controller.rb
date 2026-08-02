@@ -9,6 +9,7 @@ class ProfilesController < ApplicationController
     @posts = page_of_posts(@user.posts.timeline)
     @next_cursor = next_cursor_for(@posts)
     @liked_post_ids = liked_post_ids_for(@posts)
+    @reposted_post_ids = reposted_post_ids_for(@posts)
   end
 
   def edit

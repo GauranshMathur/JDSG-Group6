@@ -3,6 +3,7 @@ class Post < ApplicationRecord
 
   belongs_to :user
   has_many :likes, dependent: :destroy
+  has_many :reposts, dependent: :destroy
 
   validates :body, presence: true, length: { maximum: MAX_BODY_LENGTH }
 

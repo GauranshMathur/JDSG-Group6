@@ -19,7 +19,7 @@
 
   <div id="timeline" class="timeline">
     <%= render partial: "posts/post", collection: @posts,
-              locals: { liked_post_ids: @liked_post_ids } %>
+              locals: { liked_post_ids: @liked_post_ids, reposted_post_ids: @reposted_post_ids } %>
 
     <% if @posts.empty? %>
       <p class="timeline__empty">No posts yet.</p>

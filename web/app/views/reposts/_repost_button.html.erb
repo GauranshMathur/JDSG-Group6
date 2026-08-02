@@ -1,0 +1,18 @@
+<div id="<%= dom_id(post, :repost) %>" class="repost-button">
+  <% if authenticated? && reposted %>
+    <%= button_to post_repost_path(post), method: :delete, class: "repost-button__toggle repost-button__toggle--reposted" do %>
+      <span class="repost-button__icon" aria-hidden="true">&#x21BB;</span>
+      <span class="repost-button__count"><%= post.reposts_count %></span>
+    <% end %>
+  <% elsif authenticated? %>
+    <%= button_to post_repost_path(post), method: :post, class: "repost-button__toggle" do %>
+      <span class="repost-button__icon" aria-hidden="true">&#x21BB;</span>
+      <span class="repost-button__count"><%= post.reposts_count %></span>
+    <% end %>
+  <% else %>
+    <span class="repost-button__toggle repost-button__toggle--static">
+      <span class="repost-button__icon" aria-hidden="true">&#x21BB;</span>
+      <span class="repost-button__count"><%= post.reposts_count %></span>
+    </span>
+  <% end %>
+</div>

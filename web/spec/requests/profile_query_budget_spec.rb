@@ -11,9 +11,9 @@ RSpec.describe "Profile query budget" do
   # One SELECT to find the user by username, one for their page of posts.
   let(:anonymous_budget) { 2 }
 
-  # Plus one lookup to resume the session from its cookie, and one batch lookup
-  # for which posts the current user has liked.
-  let(:signed_in_budget) { 4 }
+  # Plus one lookup to resume the session from its cookie, and batch lookups
+  # for which posts the current user has liked and reposted.
+  let(:signed_in_budget) { 5 }
 
   it "issues a constant number of queries regardless of the number of posts" do
     ada = create(:user, username: "ada")

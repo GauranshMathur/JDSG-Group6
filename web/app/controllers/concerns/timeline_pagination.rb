@@ -27,4 +27,10 @@ module TimelinePagination
 
       Current.user.likes.where(post_id: posts.map(&:id)).pluck(:post_id).to_set
     end
+
+    def reposted_post_ids_for(posts)
+      return Set.new unless Current.user
+
+      Current.user.reposts.where(post_id: posts.map(&:id)).pluck(:post_id).to_set
+    end
 end
