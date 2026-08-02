@@ -89,10 +89,10 @@ production-ready, and so the work is visible if it ever is deployed.
 
 | ID | Requirement | Status |
 | --- | --- | --- |
-| F-6.1 | A search field in the sidebar finds posts by body text | Planned |
-| F-6.2 | Search also finds users by username | Planned |
-| F-6.3 | Search behaves identically on SQLite and PostgreSQL | Planned — a plain `LIKE` search; ranked full-text is a later decision |
-| F-6.4 | Results reuse the timeline rendering and cursor pagination | Planned |
+| F-6.1 | A search field in the sidebar finds posts by body text | Met — `Post.search` LIKE scope, sidebar link to `/search` |
+| F-6.2 | Search also finds users by username | Met — `User.search` LIKE scope, user results shown above posts |
+| F-6.3 | Search behaves identically on SQLite and PostgreSQL | Met — plain `LIKE` with `sanitize_sql_like`, no adapter-specific SQL |
+| F-6.4 | Results reuse the timeline rendering and cursor pagination | Met — reuses `_post` partial, `TimelinePagination` concern, and `_pagination` partial |
 
 ### 1.7 Later milestones
 

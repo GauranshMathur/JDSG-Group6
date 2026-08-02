@@ -28,12 +28,13 @@ Where things are written down:
 | `docs/open-questions.md` | Decisions not yet taken, each with why it matters and when it is needed |
 | `docs/adr/` | Decision records — why a choice was made, and what it cost |
 
-**Current state: milestones 1–5 done.** The Rails app exists in
+**Current state: milestones 1–6 done.** The Rails app exists in
 `web/`, the feed works, and accounts exist — register, sign in, sign out, reset. Posts belong
 to their authors, who can edit and delete their own. Every account has an immutable username,
 a public `/@username` profile page, and an editable display name and bio; a sidebar is the
 application shell. Engagement is complete: likes, reposts, replies (with a post detail page),
-and hashtags (parsed, linked, with tag pages). No search, no follows, no jobs, no infra.
+and hashtags (parsed, linked, with tag pages). Search finds posts by body text and users by
+username via plain LIKE. No follows, no jobs, no infra.
 
 ## How we work here
 
