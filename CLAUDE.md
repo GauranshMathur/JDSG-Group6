@@ -43,6 +43,9 @@ any individual convention below:
 
 - Do not scaffold ahead of the current milestone. If milestone 1 is the feed, do not add
   a follow graph, likes, or auth "while we're in there".
+- **Each milestone is built, tested, and merged before the next one starts.** A milestone
+  is not done until its PR is green and merged into the default branch. Do not stack
+  milestones on a single branch or start the next milestone on unmerged work.
 - Prefer finishing one feature end-to-end — **specs first** (red), then
   migration → model → controller → view (green), then refactor — over starting several.
 - When a decision is genuinely open, ask rather than guessing. Add it to
@@ -190,15 +193,13 @@ docker compose -f infra/docker/docker-compose.yml up -d   # Postgres, only when 
 
 ## Current milestone
 
-**Milestone 5 — engagement and hashtags.** The milestone has four slices — likes, reposts,
-replies, then hashtags — planned in detail in `docs/roadmap.md`. Read that and the matching
-requirement IDs (F-5.x) in `REQUIREMENTS.md` before starting. Build slices in order, one at
-a time — each is a PR, and each ends with the app working.
+**Milestones 1–6 are done.** The next milestone is 7 (Follows). Read `docs/roadmap.md` and
+the matching requirement IDs in `REQUIREMENTS.md` before starting any new milestone.
 
-Anything outside the current milestone — follows, media, notifications, account deletion —
-is later. If a task seems to require one of them, say so and ask rather than expanding scope.
+Anything outside the current milestone — media, notifications, account deletion — is later.
+If a task seems to require one of them, say so and ask rather than expanding scope.
 
-Two rules that this block of work depends on:
+Two rules that carry forward:
 
 - **Reading is public; only writing needs an account.** See `docs/design-principles.md`. Guard `create`, `update` and `destroy` — never `index` or `show`.
 - **Authorise by scoping, not by checking.** `Current.user.posts.find(params[:id])`, not

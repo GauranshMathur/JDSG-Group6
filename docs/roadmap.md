@@ -1,7 +1,9 @@
 # Roadmap
 
 Ordered. Each milestone is a shippable slice; we plan the details of a milestone when we
-reach it, not before.
+reach it, not before. **Each milestone is built, tested, and merged before the next one
+starts** — a milestone is not done until its pull request is green and merged into the default
+branch.
 
 | # | Milestone | Status |
 | --- | --- | --- |
