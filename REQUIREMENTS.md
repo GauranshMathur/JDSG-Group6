@@ -81,9 +81,9 @@ production-ready, and so the work is visible if it ever is deployed.
 | F-5.7 | A post displays its like count | Met — `posts.likes_count` counter cache, batch lookup for current-user state |
 | F-5.8 | A signed-in user can repost and un-repost a post | Met — `Repost` join table with counter cache, Turbo Stream toggle |
 | F-5.9 | A post displays its repost count | Met — `posts.reposts_count` counter cache, batch lookup for current-user state |
-| F-5.10 | A signed-in user can reply to a post | Planned |
-| F-5.11 | A post detail page lists the post and its direct replies | Planned |
-| F-5.12 | A post displays its reply count | Planned |
+| F-5.10 | A signed-in user can reply to a post | Met — replies are posts with a `parent_id`, created via `RepliesController` |
+| F-5.11 | A post detail page lists the post and its direct replies | Met — `GET /posts/:id` shows parent + chronological replies with "replying to @username" context |
+| F-5.12 | A post displays its reply count | Met — `posts.replies_count` counter cache, displayed as a link to the detail page |
 
 ### 1.6 Search (milestone 6)
 
