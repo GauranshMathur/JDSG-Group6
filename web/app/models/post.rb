@@ -6,8 +6,12 @@ class Post < ApplicationRecord
   has_many :replies, class_name: "Post", foreign_key: :parent_id, dependent: :destroy, inverse_of: :parent
   has_many :likes, dependent: :destroy
   has_many :reposts, dependent: :destroy
+  has_many :post_tags, dependent: :destroy
+  has_many :tags, through: :post_tags
 
   validates :body, presence: true, length: { maximum: MAX_BODY_LENGTH }
+
+  after_save :sync_tags
 
   # Newest first, with id breaking ties so the ordering is total and stable.
   # Without the tie-break, posts sharing a created_at could swap places between
@@ -82,5 +86,15 @@ class Post < ApplicationRecord
 
   def edited?
     updated_at > created_at + EDIT_TOLERANCE
+  end
+
+  HASHTAG_REGEX = /#(\w+)/
+
+  private
+
+  def sync_tags
+    parsed_names = body.scan(HASHTAG_REGEX).flatten.map(&:downcase).uniq
+    current_tags = parsed_names.map { |name| Tag.find_or_create_by!(name: name) }
+    self.tags = current_tags
   end
 end

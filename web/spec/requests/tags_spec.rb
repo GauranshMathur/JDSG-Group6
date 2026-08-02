@@ -48,8 +48,8 @@ RSpec.describe "Tags" do
       get tag_path("rails")
 
       expect(response).to have_http_status(:ok)
-      expect(response.body).to include("First #rails post")
-      expect(response.body).to include("Second #rails post")
+      expect(response.body).to include("First")
+      expect(response.body).to include("Second")
       expect(response.body).not_to include("No tag here")
     end
 

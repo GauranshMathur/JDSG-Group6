@@ -34,5 +34,7 @@ Rails.application.routes.draw do
   get   "profile/edit", to: "profiles#edit",   as: :edit_profile
   patch "profile",      to: "profiles#update", as: :update_profile
 
+  resources :tags, only: [ :show ], param: :name
+
   root "posts#index"
 end

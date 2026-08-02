@@ -25,7 +25,7 @@
     <% end %>
   </header>
 
-  <p class="post__body"><%= post.body %></p>
+  <p class="post__body"><%= render_body_with_hashtags(post.body) %></p>
 
   <footer class="post__footer">
     <%= link_to post_path(post), class: "reply-count" do %>

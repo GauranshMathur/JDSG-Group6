@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_02_134239) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_02_135127) do
   create_table "likes", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.integer "post_id", null: false
@@ -19,6 +19,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_02_134239) do
     t.index ["post_id"], name: "index_likes_on_post_id"
     t.index ["user_id", "post_id"], name: "index_likes_on_user_id_and_post_id", unique: true
     t.index ["user_id"], name: "index_likes_on_user_id"
+  end
+
+  create_table "post_tags", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.integer "post_id", null: false
+    t.integer "tag_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["post_id", "tag_id"], name: "index_post_tags_on_post_id_and_tag_id", unique: true
+    t.index ["post_id"], name: "index_post_tags_on_post_id"
+    t.index ["tag_id"], name: "index_post_tags_on_tag_id"
   end
 
   create_table "posts", force: :cascade do |t|
@@ -54,6 +64,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_02_134239) do
     t.index ["user_id"], name: "index_sessions_on_user_id"
   end
 
+  create_table "tags", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "name", null: false
+    t.datetime "updated_at", null: false
+    t.index ["name"], name: "index_tags_on_name", unique: true
+  end
+
   create_table "users", force: :cascade do |t|
     t.string "bio"
     t.datetime "created_at", null: false
@@ -68,6 +85,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_02_134239) do
 
   add_foreign_key "likes", "posts"
   add_foreign_key "likes", "users"
+  add_foreign_key "post_tags", "posts"
+  add_foreign_key "post_tags", "tags"
   add_foreign_key "posts", "posts", column: "parent_id"
   add_foreign_key "posts", "users"
   add_foreign_key "reposts", "posts"
