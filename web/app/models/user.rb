@@ -25,6 +25,8 @@ class User < ApplicationRecord
   # functional index over LOWER(email_address) — is written differently on SQLite
   # and PostgreSQL, which N-1.2 rules out. The username works the same way:
   # normalised on write, one plain unique index, nothing adapter-specific.
+  scope :search, ->(query) { where("username LIKE ?", "%#{sanitize_sql_like(query.downcase)}%") }
+
   normalizes :email_address, with: ->(e) { e.strip.downcase }
   normalizes :username, with: ->(u) { u.strip.downcase }
 

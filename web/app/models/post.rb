@@ -26,6 +26,7 @@ class Post < ApplicationRecord
   # attributing posts to their authors costs no extra round trip at all.
   scope :top_level, -> { where(parent_id: nil) }
   scope :timeline, -> { top_level.eager_load(:user).order(created_at: :desc, id: :desc) }
+  scope :search, ->(query) { where("posts.body LIKE ?", "%#{sanitize_sql_like(query)}%") }
 
   # Keyset pagination: the page of posts strictly older than the given position.
   # Offset pagination would shift as new posts arrive at the head of the
