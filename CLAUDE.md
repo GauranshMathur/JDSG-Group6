@@ -44,8 +44,9 @@ any individual convention below:
 - Do not scaffold ahead of the current milestone. If milestone 1 is the feed, do not add
   a follow graph, likes, or auth "while we're in there".
 - **Each milestone is built, tested, and merged before the next one starts.** A milestone
-  is not done until its PR is green and merged into the default branch. Do not stack
-  milestones on a single branch or start the next milestone on unmerged work.
+  is not done until its PR is green and merged into the default branch. Each milestone gets
+  its own branch and its own pull request — do not stack milestones on a single branch or
+  start the next milestone on unmerged work.
 - Prefer finishing one feature end-to-end — **specs first** (red), then
   migration → model → controller → view (green), then refactor — over starting several.
 - When a decision is genuinely open, ask rather than guessing. Add it to
@@ -145,6 +146,8 @@ written has never proven anything.
 
 - All work reaches the default branch through a **pull request**. Do not commit to it
   directly.
+- **One branch per milestone.** Create a fresh branch from `main` for each milestone.
+  Do not reuse a milestone's branch for the next milestone.
 - Branch names: `feat/<short-description>`, `fix/<short-description>`, `docs/<...>`.
 - CI is the review gate: a pull request is ready when the pipeline is green, so never open
   one expecting to fix it up afterwards.
