@@ -196,11 +196,13 @@ docker compose -f infra/docker/docker-compose.yml up -d   # Postgres, only when 
 
 ## Current milestone
 
-**Milestones 1–6 are done.** The next milestone is 7 (Follows). Read `docs/roadmap.md` and
-the matching requirement IDs in `REQUIREMENTS.md` before starting any new milestone.
+**Milestone 5.5 — Feed v2.** Reposts appear in the timeline, the feed is ranked by
+engagement, and a load-test seed script creates 1,000 users and 1,000 posts for volume
+testing. Read `docs/roadmap.md` (milestone 5.5) and the matching requirement IDs (F-5.5.x)
+in `REQUIREMENTS.md` before starting.
 
-Anything outside the current milestone — media, notifications, account deletion — is later.
-If a task seems to require one of them, say so and ask rather than expanding scope.
+Anything outside the current milestone — follows, media, notifications, account deletion —
+is later. If a task seems to require one of them, say so and ask rather than expanding scope.
 
 Two rules that carry forward:
 
