@@ -1,0 +1,9 @@
+<%= turbo_stream.append "replies" do %>
+  <div class="reply" id="<%= dom_id(@reply) %>">
+    <p class="reply__context">Replying to <a href="<%= profile_path(@parent.user.username) %>">@<%= @parent.user.username %></a></p>
+    <%= render partial: "posts/post", locals: {
+          post: @reply,
+          liked_post_ids: Set.new,
+          reposted_post_ids: Set.new } %>
+  </div>
+<% end %>

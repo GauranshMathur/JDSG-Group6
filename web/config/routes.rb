@@ -16,9 +16,10 @@ Rails.application.routes.draw do
   # get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
 
   # The feed is the whole application for now.
-  resources :posts, only: [ :index, :create, :edit, :update, :destroy ] do
+  resources :posts, only: [ :index, :show, :create, :edit, :update, :destroy ] do
     resource :like, only: [ :create, :destroy ]
     resource :repost, only: [ :create, :destroy ]
+    resources :replies, only: [ :create ], controller: "replies"
   end
 
   # Public profiles. The @ is literal — /@ada — so a profile URL reads the way

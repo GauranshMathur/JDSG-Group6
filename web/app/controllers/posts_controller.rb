@@ -2,7 +2,7 @@ class PostsController < ApplicationController
   include TimelinePagination
 
   # Reading is public; only writing needs an account. See docs/design-principles.md.
-  allow_unauthenticated_access only: :index
+  allow_unauthenticated_access only: [ :index, :show ]
 
   # Authorisation by scoping, not by checking (F-3.5). Every write loads the post
   # through Current.user.posts, so someone else's row is simply not found and
@@ -16,6 +16,14 @@ class PostsController < ApplicationController
     @next_cursor = next_cursor_for(@posts)
     @liked_post_ids = liked_post_ids_for(@posts)
     @reposted_post_ids = reposted_post_ids_for(@posts)
+  end
+
+  def show
+    @post = Post.eager_load(:user).find(params[:id])
+    @replies = @post.replies.eager_load(:user).order(created_at: :asc, id: :asc)
+    @reply = Post.new
+    @liked_post_ids = liked_post_ids_for([ @post ] + @replies)
+    @reposted_post_ids = reposted_post_ids_for([ @post ] + @replies)
   end
 
   def create

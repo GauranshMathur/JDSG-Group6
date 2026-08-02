@@ -3,7 +3,7 @@ require "rails_helper"
 # F-5.10, F-5.11, F-5.12
 RSpec.describe "Replies" do
   let(:user) { create(:user) }
-  let(:parent_post) { create(:post) }
+  let!(:parent_post) { create(:post) }
 
   # F-5.11
   describe "GET /posts/:id (post detail page)" do

@@ -273,6 +273,60 @@ body {
   font-size: 0.8125rem;
 }
 
+.reply-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.375rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  color: var(--colour-muted);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.reply-count:hover {
+  color: var(--colour-text);
+}
+
+.reply-count__icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.reply-count__count {
+  font-size: 0.8125rem;
+}
+
+.post-detail__parent {
+  border-bottom: 2px solid var(--colour-border);
+  padding-bottom: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.reply-composer {
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--colour-border);
+}
+
+.reply {
+  border-bottom: 1px solid var(--colour-border);
+  padding-bottom: 0.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.reply__context {
+  font-size: 0.8125rem;
+  color: var(--colour-muted);
+  margin: 0 0 0.25rem;
+  padding-left: 0.5rem;
+}
+
+.reply__context a {
+  color: var(--colour-link);
+}
+
 /* Pagination */
 
 .pagination {

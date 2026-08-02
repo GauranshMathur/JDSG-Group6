@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_02_083113) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_02_134239) do
   create_table "likes", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.integer "post_id", null: false
@@ -25,10 +25,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_02_083113) do
     t.text "body", null: false
     t.datetime "created_at", null: false
     t.integer "likes_count", default: 0, null: false
+    t.integer "parent_id"
+    t.integer "replies_count", default: 0, null: false
     t.integer "reposts_count", default: 0, null: false
     t.datetime "updated_at", null: false
     t.integer "user_id", null: false
     t.index ["created_at", "id"], name: "index_posts_on_created_at_and_id", order: :desc
+    t.index ["parent_id"], name: "index_posts_on_parent_id"
     t.index ["user_id"], name: "index_posts_on_user_id"
   end
 
@@ -65,6 +68,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_02_083113) do
 
   add_foreign_key "likes", "posts"
   add_foreign_key "likes", "users"
+  add_foreign_key "posts", "posts", column: "parent_id"
   add_foreign_key "posts", "users"
   add_foreign_key "reposts", "posts"
   add_foreign_key "reposts", "users"
