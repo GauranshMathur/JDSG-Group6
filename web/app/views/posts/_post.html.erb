@@ -25,5 +25,16 @@
     <% end %>
   </header>
 
-  <p class="post__body"><%= post.body %></p>
+  <p class="post__body"><%= render_body_with_hashtags(post.body) %></p>
+
+  <footer class="post__footer">
+    <%= link_to post_path(post), class: "reply-count" do %>
+      <span class="reply-count__icon" aria-hidden="true">&#x1F4AC;</span>
+      <span class="reply-count__count"><%= post.replies_count %></span>
+    <% end %>
+    <%= render "likes/like_button", post: post,
+          liked: (defined?(liked_post_ids) && liked_post_ids&.include?(post.id)) %>
+    <%= render "reposts/repost_button", post: post,
+          reposted: (defined?(reposted_post_ids) && reposted_post_ids&.include?(post.id)) %>
+  </footer>
 </article>

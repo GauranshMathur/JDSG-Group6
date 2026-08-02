@@ -2,8 +2,16 @@ class Post < ApplicationRecord
   MAX_BODY_LENGTH = 280
 
   belongs_to :user
+  belongs_to :parent, class_name: "Post", counter_cache: :replies_count, optional: true
+  has_many :replies, class_name: "Post", foreign_key: :parent_id, dependent: :destroy, inverse_of: :parent
+  has_many :likes, dependent: :destroy
+  has_many :reposts, dependent: :destroy
+  has_many :post_tags, dependent: :destroy
+  has_many :tags, through: :post_tags
 
   validates :body, presence: true, length: { maximum: MAX_BODY_LENGTH }
+
+  after_save :sync_tags
 
   # Newest first, with id breaking ties so the ordering is total and stable.
   # Without the tie-break, posts sharing a created_at could swap places between
@@ -16,7 +24,9 @@ class Post < ApplicationRecord
   # eager_load rather than includes: includes preloads the users in a second
   # query, while eager_load joins them into the one that fetches the posts. So
   # attributing posts to their authors costs no extra round trip at all.
-  scope :timeline, -> { eager_load(:user).order(created_at: :desc, id: :desc) }
+  scope :top_level, -> { where(parent_id: nil) }
+  scope :timeline, -> { top_level.eager_load(:user).order(created_at: :desc, id: :desc) }
+  scope :search, ->(query) { where("posts.body LIKE ?", "%#{sanitize_sql_like(query)}%") }
 
   # Keyset pagination: the page of posts strictly older than the given position.
   # Offset pagination would shift as new posts arrive at the head of the
@@ -77,5 +87,15 @@ class Post < ApplicationRecord
 
   def edited?
     updated_at > created_at + EDIT_TOLERANCE
+  end
+
+  HASHTAG_REGEX = /#(\w+)/
+
+  private
+
+  def sync_tags
+    parsed_names = body.scan(HASHTAG_REGEX).flatten.map(&:downcase).uniq
+    current_tags = parsed_names.map { |name| Tag.find_or_create_by!(name: name) }
+    self.tags = current_tags
   end
 end

@@ -1,5 +1,6 @@
 require "rails_helper"
 
+# F-2.1, F-2.2, F-4.2, F-4.6
 RSpec.describe "Registrations" do
   let(:valid_params) do
     { user: { username: "ada",

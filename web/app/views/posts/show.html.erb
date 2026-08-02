@@ -1,0 +1,31 @@
+<% content_for :title, "Post by #{@post.user.name}" %>
+
+<div class="feed post-detail">
+  <div class="post-detail__parent">
+    <%= render partial: "posts/post", locals: {
+          post: @post,
+          liked_post_ids: @liked_post_ids,
+          reposted_post_ids: @reposted_post_ids } %>
+  </div>
+
+  <% if authenticated? %>
+    <div class="reply-composer" id="reply-composer">
+      <%= form_with model: @reply || Post.new, url: post_replies_path(@post), class: "composer" do |f| %>
+        <%= f.text_area :body, placeholder: "Reply to @#{@post.user.username}...", class: "composer__input", rows: 2 %>
+        <%= f.submit "Reply", class: "composer__submit" %>
+      <% end %>
+    </div>
+  <% end %>
+
+  <div id="replies" class="replies">
+    <% @replies.each do |reply| %>
+      <div class="reply" id="<%= dom_id(reply) %>">
+        <p class="reply__context">Replying to <a href="<%= profile_path(@post.user.username) %>">@<%= @post.user.username %></a></p>
+        <%= render partial: "posts/post", locals: {
+              post: reply,
+              liked_post_ids: @liked_post_ids,
+              reposted_post_ids: @reposted_post_ids } %>
+      </div>
+    <% end %>
+  </div>
+</div>

@@ -1,0 +1,3 @@
+<%= turbo_stream.replace dom_id(@post, :repost),
+      partial: "reposts/repost_button",
+      locals: { post: @post, reposted: true } %>

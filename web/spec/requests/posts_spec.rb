@@ -10,6 +10,7 @@ RSpec.describe "Posts" do
       expect(response).to have_http_status(:ok)
     end
 
+    # F-3.6
     it "shows a signed-out visitor a prompt instead of the composer" do
       get posts_path
 
@@ -17,6 +18,7 @@ RSpec.describe "Posts" do
       expect(response.body).not_to include("What&#39;s happening?")
     end
 
+    # F-1.1
     it "shows a signed-in user the composer" do
       sign_in
 
@@ -25,6 +27,7 @@ RSpec.describe "Posts" do
       expect(response.body).to include("What&#39;s happening?")
     end
 
+    # F-1.4
     it "shows existing posts with their author's handle linking to the profile" do
       create(:post, body: "hello world", user: create(:user, username: "ada"))
 
@@ -35,12 +38,14 @@ RSpec.describe "Posts" do
       expect(response.body).to include(profile_path("ada"))
     end
 
+    # F-1.10
     it "shows the empty state when there are no posts" do
       get posts_path
 
       expect(response.body).to include("Nothing here yet")
     end
 
+    # F-1.7
     it "returns at most one page of posts" do
       create_list(:post, PostsController::PAGE_SIZE + 5)
 
@@ -49,6 +54,7 @@ RSpec.describe "Posts" do
       expect(response.body.scan(/class="post"/).size).to eq(PostsController::PAGE_SIZE)
     end
 
+    # F-1.8
     it "offers a load-older link when the timeline is longer than one page" do
       create_list(:post, PostsController::PAGE_SIZE + 1)
 
@@ -57,6 +63,7 @@ RSpec.describe "Posts" do
       expect(response.body).to include("Load older posts")
     end
 
+    # F-1.8
     it "omits the load-older link on the last page" do
       create_list(:post, 3)
 
@@ -65,6 +72,7 @@ RSpec.describe "Posts" do
       expect(response.body).not_to include("Load older posts")
     end
 
+    # F-1.8
     it "returns older posts when given a cursor" do
       newest = create(:post, body: "newest", created_at: 1.minute.ago)
       create(:post, body: "oldest", created_at: 2.minutes.ago)
@@ -75,6 +83,7 @@ RSpec.describe "Posts" do
       expect(response.body).not_to include("newest")
     end
 
+    # F-1.8
     it "falls back to the first page when the cursor is malformed" do
       create(:post, body: "hello world")
 
@@ -84,9 +93,9 @@ RSpec.describe "Posts" do
       expect(response.body).to include("hello world")
     end
 
-    # "not-a-cursor" above has no comma, so it is rejected before the timestamp
-    # is ever parsed. This one has the right shape and an unparseable timestamp,
-    # which is the case that used to render an empty feed.
+    # F-1.8. "not-a-cursor" above has no comma, so it is rejected before the
+    # timestamp is ever parsed. This one has the right shape and an unparseable
+    # timestamp, which is the case that used to render an empty feed.
     it "falls back to the first page when only the cursor timestamp is malformed" do
       create(:post, body: "hello world")
 
@@ -114,6 +123,7 @@ RSpec.describe "Posts" do
 
       before { sign_in(current_user) }
 
+      # F-1.1
       it "creates a post and redirects for an HTML request" do
         expect {
           post posts_path, params: { post: { body: "a new post" } }
@@ -122,6 +132,7 @@ RSpec.describe "Posts" do
         expect(response).to redirect_to(posts_path)
       end
 
+      # F-1.6
       it "responds with a turbo stream that prepends the post" do
         post posts_path,
              params: { post: { body: "a new post" } },
@@ -134,13 +145,14 @@ RSpec.describe "Posts" do
         expect(response.body).to include('target="timeline"')
       end
 
+      # F-3.1
       it "attributes the post to the signed-in account" do
         post posts_path, params: { post: { body: "a new post" } }
 
         expect(Post.last.user).to eq(current_user)
       end
 
-      # Authorship comes from the session, so a supplied user_id must not win.
+      # F-3.5. Authorship comes from the session, so a supplied user_id must not win.
       it "ignores a user_id supplied in the parameters" do
         someone_else = create(:user)
 
@@ -149,6 +161,7 @@ RSpec.describe "Posts" do
         expect(Post.last.user).to eq(current_user)
       end
 
+      # F-1.9
       it "rejects an empty body and re-renders the feed" do
         expect {
           post posts_path, params: { post: { body: "" } }
@@ -158,6 +171,7 @@ RSpec.describe "Posts" do
         expect(response.body).to include("Body can&#39;t be blank")
       end
 
+      # F-1.2
       it "rejects a body over the length limit" do
         expect {
           post posts_path, params: { post: { body: "a" * (Post::MAX_BODY_LENGTH + 1) } }
@@ -166,6 +180,7 @@ RSpec.describe "Posts" do
         expect(response).to have_http_status(:unprocessable_content)
       end
 
+      # F-1.9
       it "still renders the timeline when the submission fails" do
         create(:post, body: "an existing post")
 

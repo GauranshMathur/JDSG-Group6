@@ -1,7 +1,9 @@
 # Roadmap
 
 Ordered. Each milestone is a shippable slice; we plan the details of a milestone when we
-reach it, not before.
+reach it, not before. **Each milestone is built, tested, and merged before the next one
+starts** — a milestone is not done until its pull request is green and merged into the default
+branch.
 
 | # | Milestone | Status |
 | --- | --- | --- |
@@ -10,8 +12,8 @@ reach it, not before.
 | 2 | **Authentication** — sign up, sign in, sign out, sessions | **Done** |
 | 3 | **Post ownership and CRUD** — posts belong to users; edit and delete your own | **Done** |
 | 4 | **Navigation and profiles** — sidebar shell, profile pages, edit your profile | **Done** |
-| 5 | **Engagement and hashtags** — likes, reposts, replies, `#tag` pages | Next |
-| 6 | **Search** — find posts and people from the sidebar | Planned |
+| 5 | **Engagement and hashtags** — likes, reposts, replies, `#tag` pages | **Done** |
+| 6 | **Search** — find posts and people from the sidebar | **Done** |
 | 7 | Follows — follow/unfollow, following-only feed | Later |
 | 8 | Media — image uploads on posts | Later |
 | 9 | Notifications | Later |

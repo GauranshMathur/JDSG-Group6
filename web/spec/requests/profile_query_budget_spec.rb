@@ -11,8 +11,9 @@ RSpec.describe "Profile query budget" do
   # One SELECT to find the user by username, one for their page of posts.
   let(:anonymous_budget) { 2 }
 
-  # Plus one lookup to resume the session from its cookie.
-  let(:signed_in_budget) { 3 }
+  # Plus one lookup to resume the session from its cookie, and batch lookups
+  # for which posts the current user has liked and reposted.
+  let(:signed_in_budget) { 5 }
 
   it "issues a constant number of queries regardless of the number of posts" do
     ada = create(:user, username: "ada")
@@ -42,6 +43,6 @@ RSpec.describe "Profile query budget" do
     sql = queries_in { get profile_path("ada") }
 
     expect(response.body).to include("Load older posts")
-    expect(sql.grep(/COUNT/i)).to be_empty
+    expect(sql.grep(/\bCOUNT\s*\(/i)).to be_empty
   end
 end

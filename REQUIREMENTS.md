@@ -72,27 +72,27 @@ production-ready, and so the work is visible if it ever is deployed.
 
 | ID | Requirement | Status |
 | --- | --- | --- |
-| F-5.1 | Hashtags are parsed out of a post body when it is saved | Planned |
-| F-5.2 | Tags are stored in their own table with a join, not matched with `LIKE` | Planned |
-| F-5.3 | Tags are normalised to lower case, so `#Rails` and `#rails` are one tag | Planned |
-| F-5.4 | Hashtags render as links in a post body | Planned |
-| F-5.5 | A tag page lists every post carrying that tag, with the same ordering and pagination as the feed | Planned |
-| F-5.6 | A signed-in user can like and unlike a post | Planned |
-| F-5.7 | A post displays its like count | Planned |
-| F-5.8 | A signed-in user can repost and un-repost a post | Planned |
-| F-5.9 | A post displays its repost count | Planned |
-| F-5.10 | A signed-in user can reply to a post | Planned |
-| F-5.11 | A post detail page lists the post and its direct replies | Planned |
-| F-5.12 | A post displays its reply count | Planned |
+| F-5.1 | Hashtags are parsed out of a post body when it is saved | Met — `after_save :sync_tags` callback parses `#(\w+)` from body |
+| F-5.2 | Tags are stored in their own table with a join, not matched with `LIKE` | Met — `Tag` + `PostTag` join table per ADR 0004 |
+| F-5.3 | Tags are normalised to lower case, so `#Rails` and `#rails` are one tag | Met — `normalizes :name` on Tag, parsing downcases before find_or_create |
+| F-5.4 | Hashtags render as links in a post body | Met — `render_body_with_hashtags` helper links to `/tags/:name` |
+| F-5.5 | A tag page lists every post carrying that tag, with the same ordering and pagination as the feed | Met — `TagsController#show` with timeline pagination |
+| F-5.6 | A signed-in user can like and unlike a post | Met — `Like` join table with counter cache, Turbo Stream toggle |
+| F-5.7 | A post displays its like count | Met — `posts.likes_count` counter cache, batch lookup for current-user state |
+| F-5.8 | A signed-in user can repost and un-repost a post | Met — `Repost` join table with counter cache, Turbo Stream toggle |
+| F-5.9 | A post displays its repost count | Met — `posts.reposts_count` counter cache, batch lookup for current-user state |
+| F-5.10 | A signed-in user can reply to a post | Met — replies are posts with a `parent_id`, created via `RepliesController` |
+| F-5.11 | A post detail page lists the post and its direct replies | Met — `GET /posts/:id` shows parent + chronological replies with "replying to @username" context |
+| F-5.12 | A post displays its reply count | Met — `posts.replies_count` counter cache, displayed as a link to the detail page |
 
 ### 1.6 Search (milestone 6)
 
 | ID | Requirement | Status |
 | --- | --- | --- |
-| F-6.1 | A search field in the sidebar finds posts by body text | Planned |
-| F-6.2 | Search also finds users by username | Planned |
-| F-6.3 | Search behaves identically on SQLite and PostgreSQL | Planned — a plain `LIKE` search; ranked full-text is a later decision |
-| F-6.4 | Results reuse the timeline rendering and cursor pagination | Planned |
+| F-6.1 | A search field in the sidebar finds posts by body text | Met — `Post.search` LIKE scope, sidebar link to `/search` |
+| F-6.2 | Search also finds users by username | Met — `User.search` LIKE scope, user results shown above posts |
+| F-6.3 | Search behaves identically on SQLite and PostgreSQL | Met — plain `LIKE` with `sanitize_sql_like`, no adapter-specific SQL |
+| F-6.4 | Results reuse the timeline rendering and cursor pagination | Met — reuses `_post` partial, `TimelinePagination` concern, and `_pagination` partial |
 
 ### 1.7 Later milestones
 
@@ -200,7 +200,7 @@ it depends on the PostgreSQL path — which is itself an untested claim today (N
 
 | ID | Requirement | Status |
 | --- | --- | --- |
-| N-6.1 | Rendering the feed issues a constant number of queries, regardless of how many posts are on the page | Met — 1 signed out, 2 signed in, flat from 1 post to a full page. Profile pages hold the same property at 2 and 3, the extra query being the username lookup |
+| N-6.1 | Rendering the feed issues a constant number of queries, regardless of how many posts are on the page | Met — 1 signed out, 4 signed in (session + posts + batch like lookup + batch repost lookup), flat from 1 post to a full page. Profile pages hold the same property at 2 signed out and 5 signed in, the extra query being the username lookup |
 | N-6.2 | Query count per request is asserted in specs, so a regression fails the build rather than being noticed as slowness | Met — `feed_query_budget_spec.rb` and `profile_query_budget_spec.rb` |
 | N-6.3 | The connection pool is larger than the Puma thread count | Open — equal when `RAILS_MAX_THREADS` is set, since both read it |
 | N-6.4 | Connection, checkout and statement timeouts are configured and adapter-neutral | Not met — the only timeout set is `timeout: 5000`, which is SQLite's `busy_timeout` and is ignored by PostgreSQL |
@@ -216,7 +216,7 @@ Explicitly not being built, to keep the current milestone honest:
 
 - The follow graph and any personalised or ranked timeline. "Your feed" in milestones 2–6
   means the posts you wrote, not a timeline only you can see.
-- Likes, reposts and replies.
+- Reposts, replies and hashtags — in progress as part of milestone 5.
 - Media — images on posts, and avatars on profiles.
 - Notifications.
 - Account deletion.

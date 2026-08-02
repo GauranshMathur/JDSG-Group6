@@ -1,6 +1,7 @@
 require "rails_helper"
 
 RSpec.describe Post do
+  # F-1.2, F-3.1
   describe "validations" do
     it "is valid with a body and an author" do
       expect(build(:post)).to be_valid
@@ -63,6 +64,7 @@ RSpec.describe Post do
     end
   end
 
+  # F-1.4, F-1.5
   describe ".timeline" do
     it "orders newest first" do
       older = create(:post, created_at: 2.hours.ago)
@@ -80,6 +82,7 @@ RSpec.describe Post do
     end
   end
 
+  # F-1.8
   describe ".older_than" do
     it "excludes the post the cursor points at and everything newer" do
       oldest = create(:post, created_at: 3.hours.ago)

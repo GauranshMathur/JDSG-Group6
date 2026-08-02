@@ -1,9 +1,10 @@
-<%# The application shell (F-4.1). Search joins this list in milestone 6. %>
+<%# The application shell (F-4.1, F-6.1). %>
 <aside class="sidebar">
   <%= link_to "Twitter Clone", root_path, class: "sidebar__brand" %>
 
   <nav class="sidebar__nav">
     <%= link_to "Feed", root_path, class: "sidebar__link" %>
+    <%= link_to "Search", search_path, class: "sidebar__link" %>
     <% if authenticated? %>
       <%= link_to "Profile", profile_path(Current.user.username), class: "sidebar__link" %>
     <% end %>

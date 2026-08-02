@@ -1,5 +1,6 @@
 require "rails_helper"
 
+# F-2.3, F-2.4
 RSpec.describe "Sessions" do
   describe "GET /session/new" do
     it "renders the sign-in form" do

@@ -1,0 +1,46 @@
+<% content_for :title, @query.present? ? "Search: #{@query}" : "Search" %>
+
+<div class="feed">
+  <h1 class="feed__heading">Search</h1>
+
+  <%= form_with url: search_path, method: :get, class: "search-form" do |f| %>
+    <%= f.search_field :q, value: @query, placeholder: "Search posts and people...", class: "search-form__input", autofocus: true %>
+    <%= f.submit "Search", class: "search-form__submit" %>
+  <% end %>
+
+  <% if @query.present? %>
+    <% if @users.any? %>
+      <section class="search-results__users">
+        <h2 class="search-results__heading">People</h2>
+        <% @users.each do |user| %>
+          <div class="search-results__user">
+            <%= link_to profile_path(user.username), class: "search-results__user-link" do %>
+              <span class="search-results__user-name"><%= user.name %></span>
+              <span class="search-results__user-handle">@<%= user.username %></span>
+            <% end %>
+          </div>
+        <% end %>
+      </section>
+    <% end %>
+
+    <section class="search-results__posts">
+      <h2 class="search-results__heading">Posts</h2>
+      <div id="timeline" class="timeline">
+        <%= render partial: "posts/post", collection: @posts,
+                  locals: { liked_post_ids: @liked_post_ids, reposted_post_ids: @reposted_post_ids } %>
+
+        <% if @posts.empty? && @users.empty? %>
+          <p class="timeline__empty">No results found for "<%= @query %>".</p>
+        <% elsif @posts.empty? %>
+          <p class="timeline__empty">No matching posts.</p>
+        <% end %>
+      </div>
+
+      <%= render "posts/pagination",
+            next_cursor: @next_cursor,
+            url: search_path(q: @query, after: @next_cursor) if @posts.present? %>
+    </section>
+  <% else %>
+    <p class="timeline__empty">Enter a search term above.</p>
+  <% end %>
+</div>

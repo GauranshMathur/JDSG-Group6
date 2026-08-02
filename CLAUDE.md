@@ -28,11 +28,13 @@ Where things are written down:
 | `docs/open-questions.md` | Decisions not yet taken, each with why it matters and when it is needed |
 | `docs/adr/` | Decision records — why a choice was made, and what it cost |
 
-**Current state: milestones 1–4 done, milestones 5 and 6 planned but not started.** The Rails
-app exists in `web/`, the feed works, and accounts exist — register, sign in, sign out, reset.
-Posts belong to their authors, who can edit and delete their own. Every account has an
-immutable username, a public `/@username` profile page, and an editable display name and bio;
-a sidebar is the application shell. No hashtags, no search, no follows, no jobs, no infra.
+**Current state: milestones 1–6 done.** The Rails app exists in
+`web/`, the feed works, and accounts exist — register, sign in, sign out, reset. Posts belong
+to their authors, who can edit and delete their own. Every account has an immutable username,
+a public `/@username` profile page, and an editable display name and bio; a sidebar is the
+application shell. Engagement is complete: likes, reposts, replies (with a post detail page),
+and hashtags (parsed, linked, with tag pages). Search finds posts by body text and users by
+username via plain LIKE. No follows, no jobs, no infra.
 
 ## How we work here
 
@@ -41,8 +43,11 @@ any individual convention below:
 
 - Do not scaffold ahead of the current milestone. If milestone 1 is the feed, do not add
   a follow graph, likes, or auth "while we're in there".
-- Prefer finishing one feature end-to-end (migration → model → controller → view → specs)
-  over starting several.
+- **Each milestone is built, tested, and merged before the next one starts.** A milestone
+  is not done until its PR is green and merged into the default branch. Do not stack
+  milestones on a single branch or start the next milestone on unmerged work.
+- Prefer finishing one feature end-to-end — **specs first** (red), then
+  migration → model → controller → view (green), then refactor — over starting several.
 - When a decision is genuinely open, ask rather than guessing. Add it to
   `docs/open-questions.md` with why it matters and when it needs answering.
 - A decision with a real alternative and a cost worth remembering gets an ADR in `docs/adr/`.
@@ -105,11 +110,27 @@ Do not introduce a new framework, database, job runner, or test library without 
   several places.
 - Use Turbo Streams for anything that updates in place.
 
-**Testing**
+**Testing — TDD (red-green-refactor)**
 
-- Model specs for validations and scopes; request specs for controller behaviour.
+Development follows test-driven development. The cycle is:
+
+1. **Red** — write a failing spec that describes the behaviour you want. Tag it with the
+   requirement ID from `REQUIREMENTS.md` so every requirement is traceable to at least one
+   spec. Commit.
+2. **Green** — write the minimum code to make the spec pass. Commit.
+3. **Refactor** — clean up while the specs stay green. Commit if anything changed.
+
+Do not write implementation first and tests second. A spec that was green the moment it was
+written has never proven anything.
+
+- Model specs for validations, scopes and associations; request specs for controller
+  behaviour, authorization and HTTP semantics.
+- Every requirement ID in `REQUIREMENTS.md` must be traceable to at least one spec — either
+  by a comment (`# F-3.4`) or by describing the requirement in the spec name.
 - Every feature slice ships with specs. A PR that adds behaviour with no test is incomplete.
 - No system/browser specs until there is enough UI to justify the maintenance cost.
+- Run `bundle exec rspec` locally before pushing. CI failing on something a local run
+  would have caught wastes a pipeline.
 
 **Commits**
 
@@ -172,15 +193,13 @@ docker compose -f infra/docker/docker-compose.yml up -d   # Postgres, only when 
 
 ## Current milestone
 
-**Milestone 5 — engagement and hashtags.** The milestone has four slices — likes, reposts,
-replies, then hashtags — planned in detail in `docs/roadmap.md`. Read that and the matching
-requirement IDs (F-5.x) in `REQUIREMENTS.md` before starting. Build slices in order, one at
-a time — each is a PR, and each ends with the app working.
+**Milestones 1–6 are done.** The next milestone is 7 (Follows). Read `docs/roadmap.md` and
+the matching requirement IDs in `REQUIREMENTS.md` before starting any new milestone.
 
-Anything outside the current milestone — follows, media, notifications, account deletion —
-is later. If a task seems to require one of them, say so and ask rather than expanding scope.
+Anything outside the current milestone — media, notifications, account deletion — is later.
+If a task seems to require one of them, say so and ask rather than expanding scope.
 
-Two rules that this block of work depends on:
+Two rules that carry forward:
 
 - **Reading is public; only writing needs an account.** See `docs/design-principles.md`. Guard `create`, `update` and `destroy` — never `index` or `show`.
 - **Authorise by scoping, not by checking.** `Current.user.posts.find(params[:id])`, not
