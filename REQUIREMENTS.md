@@ -72,11 +72,11 @@ production-ready, and so the work is visible if it ever is deployed.
 
 | ID | Requirement | Status |
 | --- | --- | --- |
-| F-5.1 | Hashtags are parsed out of a post body when it is saved | Planned |
-| F-5.2 | Tags are stored in their own table with a join, not matched with `LIKE` | Planned |
-| F-5.3 | Tags are normalised to lower case, so `#Rails` and `#rails` are one tag | Planned |
-| F-5.4 | Hashtags render as links in a post body | Planned |
-| F-5.5 | A tag page lists every post carrying that tag, with the same ordering and pagination as the feed | Planned |
+| F-5.1 | Hashtags are parsed out of a post body when it is saved | Met — `after_save :sync_tags` callback parses `#(\w+)` from body |
+| F-5.2 | Tags are stored in their own table with a join, not matched with `LIKE` | Met — `Tag` + `PostTag` join table per ADR 0004 |
+| F-5.3 | Tags are normalised to lower case, so `#Rails` and `#rails` are one tag | Met — `normalizes :name` on Tag, parsing downcases before find_or_create |
+| F-5.4 | Hashtags render as links in a post body | Met — `render_body_with_hashtags` helper links to `/tags/:name` |
+| F-5.5 | A tag page lists every post carrying that tag, with the same ordering and pagination as the feed | Met — `TagsController#show` with timeline pagination |
 | F-5.6 | A signed-in user can like and unlike a post | Met — `Like` join table with counter cache, Turbo Stream toggle |
 | F-5.7 | A post displays its like count | Met — `posts.likes_count` counter cache, batch lookup for current-user state |
 | F-5.8 | A signed-in user can repost and un-repost a post | Met — `Repost` join table with counter cache, Turbo Stream toggle |
