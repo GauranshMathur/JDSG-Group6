@@ -69,17 +69,16 @@ RSpec.describe "Profiles" do
       expect(response).to have_http_status(:not_found)
     end
 
-    it "pages older posts with the same cursor mechanism as the feed" do
+    it "paginates posts across pages" do
       ada = create(:user, username: "ada")
-      create_list(:post, TimelinePagination::PAGE_SIZE + 1, user: ada)
+      create_list(:post, ProfileFeed::PAGE_SIZE + 1, user: ada)
 
       get profile_path("ada")
 
-      expect(response.body.scan(/class="post"/).size).to eq(TimelinePagination::PAGE_SIZE)
-      expect(response.body).to include("Load older posts")
+      expect(response.body.scan(/class="post"/).size).to eq(ProfileFeed::PAGE_SIZE)
+      expect(response.body).to include("Load more")
 
-      oldest_shown = ada.posts.timeline.limit(TimelinePagination::PAGE_SIZE).last
-      get profile_path("ada", after: oldest_shown.cursor)
+      get profile_path("ada", page: 1)
 
       expect(response.body.scan(/class="post"/).size).to eq(1)
     end

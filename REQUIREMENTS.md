@@ -98,13 +98,13 @@ production-ready, and so the work is visible if it ever is deployed.
 
 | ID | Requirement | Status |
 | --- | --- | --- |
-| F-5.5.1 | A repost appears as a timeline entry in the global feed, attributed to the reposter | Planned |
-| F-5.5.2 | A user's profile page interleaves their reposts with their own posts | Planned |
-| F-5.5.3 | A reposted entry shows "Reposted by @username" above the original post | Planned |
-| F-5.5.4 | The feed is ranked by a score combining engagement (likes, reposts, replies) and recency | Planned |
-| F-5.5.5 | The ranked feed is cached since it is universal (same for every visitor) | Planned |
-| F-5.5.6 | A load-test seed script creates 1,000 users and 1,000 posts with realistic engagement data | Planned |
-| F-5.5.7 | The seed script works on any supported database and runs outside the app process | Planned |
+| F-5.5.1 | A repost appears as a timeline entry in the global feed, attributed to the reposter | Met — `RankedFeed` merges posts and reposts into `FeedItem` entries |
+| F-5.5.2 | A user's profile page interleaves their reposts with their own posts | Met — `ProfileFeed` merges user's posts and reposts, sorted by time |
+| F-5.5.3 | A reposted entry shows "Reposted by @username" above the original post | Met — `_feed_item.html.erb` renders attribution above the post partial |
+| F-5.5.4 | The feed is ranked by a score combining engagement (likes, reposts, replies) and recency | Met — `RankedFeed` scores `(engagement + 1) / (age_hours + 2)^1.5` |
+| F-5.5.5 | The ranked feed is cached since it is universal (same for every visitor) | Partial — universal ranking in place; Rails cache layer is a later optimisation |
+| F-5.5.6 | A load-test seed script creates 1,000 users and 1,000 posts with realistic engagement data | Met — `script/seed-load-test` via `bin/rails runner` |
+| F-5.5.7 | The seed script works on any supported database and runs outside the app process | Met — no adapter-specific SQL, runs via `bin/rails runner` |
 
 ### 1.7 Later milestones
 

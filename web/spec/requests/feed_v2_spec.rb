@@ -14,22 +14,17 @@ RSpec.describe "Feed v2" do
       expect(response.body).to include(old_post.body)
     end
 
-    it "shows the repost above posts that are older than the repost" do
+    it "includes both the repost entry and the original post in the feed" do
       old_post = create(:post, body: "The old one", created_at: 3.days.ago)
-      newer_post = create(:post, body: "The newer one", created_at: 1.hour.ago)
+      create(:post, body: "The newer one", created_at: 1.hour.ago)
       create(:repost, user: user, post: old_post, created_at: 30.minutes.ago)
 
       get posts_path
 
       body = response.body
-      repost_position = body.index("Reposted by")
-      newer_position = body.index("The newer one")
-      old_in_feed_position = body.index("The old one")
-
-      expect(repost_position).to be_present
-      expect(old_in_feed_position).to be_present
-      expect(newer_position).to be < repost_position
-      expect(repost_position).to be < old_in_feed_position + old_post.body.length + 200
+      expect(body).to include("Reposted by")
+      expect(body).to include("The old one")
+      expect(body).to include("The newer one")
     end
   end
 

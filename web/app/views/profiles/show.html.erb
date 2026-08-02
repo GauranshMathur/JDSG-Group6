@@ -18,15 +18,17 @@
   </header>
 
   <div id="timeline" class="timeline">
-    <%= render partial: "posts/post", collection: @posts,
-              locals: { liked_post_ids: @liked_post_ids, reposted_post_ids: @reposted_post_ids } %>
+    <% @feed_items.each do |feed_item| %>
+      <%= render "posts/feed_item", feed_item: feed_item,
+            liked_post_ids: @liked_post_ids, reposted_post_ids: @reposted_post_ids %>
+    <% end %>
 
-    <% if @posts.empty? %>
+    <% if @feed_items.empty? %>
       <p class="timeline__empty">No posts yet.</p>
     <% end %>
   </div>
 
-  <%= render "posts/pagination",
-        next_cursor: @next_cursor,
-        url: profile_path(@user.username, after: @next_cursor) %>
+  <% if @next_page %>
+    <%= link_to "Load more", profile_path(@user.username, page: @next_page), class: "pagination__link" %>
+  <% end %>
 </div>

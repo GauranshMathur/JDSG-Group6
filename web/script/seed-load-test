@@ -38,7 +38,7 @@ LOREM = [
   "Talk is cheap show me the code",
   "Simplicity is the ultimate sophistication",
   "Programs must be written for people to read",
-  "The best error message is the one that never shows up",
+  "The best error message is the one that never shows up"
 ].freeze
 
 HASHTAGS = %w[
@@ -53,7 +53,7 @@ DISPLAY_NAMES = [
   "Alice", "Bob", "Charlie", "Diana", "Eve", "Frank", "Grace", "Heidi",
   "Ivan", "Judy", "Karl", "Linda", "Mike", "Nancy", "Oscar", "Peggy",
   "Quentin", "Rachel", "Steve", "Tina", "Uma", "Victor", "Wendy", "Xander",
-  "Yara", "Zach",
+  "Yara", "Zach"
 ].freeze
 
 BIOS = [
@@ -62,7 +62,7 @@ BIOS = [
   "Open source enthusiast.",
   "Shipping code since 2010.",
   "Full-stack developer and occasional writer.",
-  nil,
+  nil
 ].freeze
 
 def random_body

@@ -6,10 +6,12 @@ class ProfilesController < ApplicationController
 
   def show
     @user = User.find_by!(username: params[:username].downcase)
-    @posts = page_of_posts(@user.posts.timeline)
-    @next_cursor = next_cursor_for(@posts)
-    @liked_post_ids = liked_post_ids_for(@posts)
-    @reposted_post_ids = reposted_post_ids_for(@posts)
+    feed = ProfileFeed.new(@user, page: (params[:page].to_i if params[:page].present?) || 0)
+    @feed_items = feed.items
+    @next_page = feed.next_page
+    all_posts = @feed_items.map(&:post)
+    @liked_post_ids = liked_post_ids_for(all_posts)
+    @reposted_post_ids = reposted_post_ids_for(all_posts)
   end
 
   def edit

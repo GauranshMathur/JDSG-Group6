@@ -1,6 +1,7 @@
-<%# New posts belong at the head of a reverse-chronological timeline. %>
-<%= turbo_stream.prepend "timeline", partial: "posts/post",
-      locals: { post: @post, liked_post_ids: Set.new, reposted_post_ids: Set.new } %>
+<%# New posts belong at the head of the timeline. %>
+<%= turbo_stream.prepend "timeline", partial: "posts/feed_item",
+      locals: { feed_item: FeedItem.new(post: @post, reposter: nil, sort_time: @post.created_at, score: 0),
+                liked_post_ids: Set.new, reposted_post_ids: Set.new } %>
 
 <%# Clear the composer by swapping in a fresh one bound to a new record. %>
 <%= turbo_stream.replace "composer", partial: "posts/composer", locals: { post: Post.new } %>
