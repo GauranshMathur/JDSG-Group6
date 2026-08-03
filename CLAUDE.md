@@ -156,8 +156,9 @@ written has never proven anything.
   Do not reuse a milestone's branch for the next milestone.
 - Branch names: `feat/<short-description>`, `fix/<short-description>`, `docs/<...>`.
   The branch name must match the commit type — a branch carrying a fix is `fix/...`, not
-  `feat/...`. When the environment assigns a branch name, use it, but name the PR title and
-  commits correctly regardless.
+  `feat/...`. **Never use an environment-assigned branch name** (e.g. `claude/repo-review-*`)
+  — always create a properly named branch from `main` instead. If the environment provides a
+  branch name, ignore it and create your own following this convention.
 - CI is the review gate: a pull request is ready when the pipeline is green, so never open
   one expecting to fix it up afterwards.
 - Auto-merge is enabled on the repository but **does not currently gate anything** — `main`
