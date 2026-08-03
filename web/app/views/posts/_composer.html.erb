@@ -13,7 +13,8 @@
         class: "composer__body",
         placeholder: "What's happening?",
         rows: 3,
-        maxlength: Post::MAX_BODY_LENGTH %>
+        maxlength: Post::MAX_BODY_LENGTH,
+        data: { controller: "submit-on-enter", action: "keydown->submit-on-enter#keydown" } %>
 
   <%= form.submit "Post", class: "composer__submit" %>
 <% end %>

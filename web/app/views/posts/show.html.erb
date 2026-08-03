@@ -11,7 +11,8 @@
   <% if authenticated? %>
     <div class="reply-composer" id="reply-composer">
       <%= form_with model: @reply || Post.new, url: post_replies_path(@post), class: "composer" do |f| %>
-        <%= f.text_area :body, placeholder: "Reply to @#{@post.user.username}...", class: "composer__input", rows: 2 %>
+        <%= f.text_area :body, placeholder: "Reply to @#{@post.user.username}...", class: "composer__input", rows: 2,
+              data: { controller: "submit-on-enter", action: "keydown->submit-on-enter#keydown" } %>
         <%= f.submit "Reply", class: "composer__submit" %>
       <% end %>
     </div>
