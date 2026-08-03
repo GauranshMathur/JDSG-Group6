@@ -112,6 +112,9 @@ production-ready, and so the work is visible if it ever is deployed.
 | --- | --- | --- |
 | F-7.1 | A user can upload an avatar image on their profile | Planned |
 | F-7.2 | A post can carry one or more images | Planned |
+| F-7.3 | Uploaded images are processed (resized, converted to a web-friendly format) for fast loading | Planned |
+| F-7.4 | Image metadata (EXIF, etc.) is stripped on upload | Planned |
+| F-7.5 | Posts reference images via metadata, not inline binary — images load asynchronously | Planned |
 
 ---
 

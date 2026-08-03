@@ -306,6 +306,12 @@ Profile avatars and image uploads on posts. Details planned when this milestone 
 
 - A user can upload an avatar image on their profile.
 - A post can carry one or more images.
+- Uploaded images are processed — resized and converted to a web-friendly format (e.g.
+  WebP) — so they are small and fast to load.
+- Image metadata (EXIF, etc.) is stripped on upload for privacy and to reduce file size.
+- Posts reference images via metadata (an association or URL), not by embedding the binary
+  in the post record. The image is loaded asynchronously by the browser, keeping page
+  renders fast regardless of image count or size.
 - Images are stored locally for the proof of concept; cloud storage (S3) is an
   infrastructure milestone concern.
 
