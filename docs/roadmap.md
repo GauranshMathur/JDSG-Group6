@@ -18,7 +18,8 @@ on a single branch.
 | 5 | **Engagement and hashtags** — likes, reposts, replies, `#tag` pages | **Done** |
 | 5.5 | **Feed v2** — reposts in timeline, ranked feed, load-test seed data | **Done** |
 | 6 | **Search** — find posts and people from the sidebar | **Done** |
-| 7 | **Images** — profile avatars and image uploads on posts | Next |
+| 6.5 | **Feed caching** — cache the ranked feed, warm on boot, invalidate on engagement | Next |
+| 7 | **Images** — profile avatars and image uploads on posts | Later |
 
 ### Infrastructure milestones
 
@@ -299,6 +300,20 @@ and can be cached.
 - Works on any database (SQLite or PostgreSQL) — no adapter-specific SQL.
 - Runs outside the application process so it cannot overload the running app.
 - Documented as the setup step for load testing.
+
+### Milestone 6.5 — Feed caching (F-6.5.x)
+
+The ranked feed loads every post and repost into memory on each request, which is fine at low
+volume but visibly slow once the seed data is loaded. Since the feed is universal (same for
+every visitor), it can be cached and only rebuilt when engagement changes.
+
+- Cache the scored feed items in `Rails.cache` with a short TTL (e.g. 5 minutes) as a
+  safety net.
+- Invalidate the cache when engagement changes — `after_create` / `after_destroy` callbacks
+  on `Like`, `Repost`, and `Post` bust the cache so the next request rebuilds it.
+- Warm the cache on boot via a Rails initializer, so the first request after a deploy or
+  restart is served from cache rather than hitting the full query.
+- No adapter-specific SQL — the scoring still happens in Ruby, just less often.
 
 ### Milestone 7 — Images (F-7.x)
 
