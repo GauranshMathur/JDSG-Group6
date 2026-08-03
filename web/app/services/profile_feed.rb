@@ -17,9 +17,13 @@ class ProfileFeed
   private
 
   def build_feed
-    posts = @user.posts.top_level.eager_load(:user).includes(user: { avatar_attachment: :blob }).to_a
+    posts = @user.posts.top_level.eager_load(:user)
+                 .includes(user: { avatar_attachment: :blob }, images_attachments: :blob).to_a
     reposts = @user.reposts.eager_load(:user, post: :user)
-                   .includes(user: { avatar_attachment: :blob }, post: { user: { avatar_attachment: :blob } })
+                   .includes(
+                     user: { avatar_attachment: :blob },
+                     post: { user: { avatar_attachment: :blob }, images_attachments: :blob }
+                   )
                    .where(post: Post.top_level).to_a
 
     feed = []

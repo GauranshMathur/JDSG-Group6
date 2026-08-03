@@ -824,6 +824,27 @@ body {
   align-items: baseline;
 }
 
+/* Post images */
+
+.post__images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.post__image {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.75rem;
+  border: 1px solid var(--colour-border);
+}
+
+.composer__file {
+  font-size: 0.875rem;
+  color: var(--colour-muted);
+}
+
 /* Profile avatar */
 
 .profile__avatar {
