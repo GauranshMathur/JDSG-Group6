@@ -196,12 +196,13 @@ docker compose -f infra/docker/docker-compose.yml up -d   # Postgres, only when 
 
 ## Current milestone
 
-**Milestone 7 — Images.** Profile avatars and image uploads on posts. Read
-`docs/roadmap.md` (milestone 7) and the matching requirement IDs (F-7.x) in
+**Milestone 6.5 — Feed caching.** Cache the ranked feed so it is not recomputed on every
+request, invalidate on engagement changes, and warm the cache on boot. Read
+`docs/roadmap.md` (milestone 6.5) and the matching requirement IDs (F-6.5.x) in
 `REQUIREMENTS.md` before starting.
 
-Anything outside the current milestone — follows, notifications, account deletion — is later.
-If a task seems to require one of them, say so and ask rather than expanding scope.
+Anything outside the current milestone — images, follows, notifications, account deletion —
+is later. If a task seems to require one of them, say so and ask rather than expanding scope.
 
 Two rules that carry forward:
 
