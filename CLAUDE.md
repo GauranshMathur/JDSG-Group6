@@ -139,6 +139,10 @@ written has never proven anything.
   is derived from these, so the prefix is functional, not decorative.
 - Format: `type(scope): subject`, e.g. `feat(feed): add cursor pagination to timeline`.
 - Types: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`, `ci`, `perf`.
+- **`feat` means a wholly new capability that did not exist before.** A UX improvement,
+  behavioral tweak, or polish to something that already works is a `fix`, not a `feat`.
+  When in doubt: if removing it would leave a gap in functionality, it was a `feat`;
+  if removing it would just revert to the previous behavior, it was a `fix`.
 - Breaking changes: `feat!:` or a `BREAKING CHANGE:` footer.
 - Subject in the imperative mood, lowercase, no trailing period.
 
@@ -149,6 +153,9 @@ written has never proven anything.
 - **One branch per milestone.** Create a fresh branch from `main` for each milestone.
   Do not reuse a milestone's branch for the next milestone.
 - Branch names: `feat/<short-description>`, `fix/<short-description>`, `docs/<...>`.
+  The branch name must match the commit type — a branch carrying a fix is `fix/...`, not
+  `feat/...`. When the environment assigns a branch name, use it, but name the PR title and
+  commits correctly regardless.
 - CI is the review gate: a pull request is ready when the pipeline is green, so never open
   one expecting to fix it up afterwards.
 - Auto-merge is enabled on the repository but **does not currently gate anything** — `main`
