@@ -1,6 +1,6 @@
 <%# Authorship comes from the signed-in account, so the composer no longer asks
     who is posting. %>
-<%= form_with model: post, id: "composer", class: "composer" do |form| %>
+<%= form_with model: post, id: "composer", class: "composer", data: { controller: "composer-preview" } do |form| %>
   <% if post.errors.any? %>
     <ul class="composer__errors">
       <% post.errors.full_messages.each do |message| %>
@@ -17,10 +17,15 @@
         data: { controller: "submit-on-enter", action: "keydown->submit-on-enter#keydown" } %>
 
   <div class="composer__row">
-    <%= form.file_field :images,
-          multiple: true,
-          accept: "image/png,image/jpeg,image/webp,image/gif",
-          class: "composer__file" %>
+    <label class="composer__image-btn" title="Add images">
+      <span aria-hidden="true">&#x1F4F7;</span>
+      <%= form.file_field :images,
+            multiple: true,
+            accept: "image/png,image/jpeg,image/webp,image/gif",
+            class: "composer__file",
+            data: { action: "change->composer-preview#preview" } %>
+    </label>
     <%= form.submit "Post", class: "composer__submit" %>
   </div>
+  <div class="composer__previews" data-composer-preview-target="container"></div>
 <% end %>
