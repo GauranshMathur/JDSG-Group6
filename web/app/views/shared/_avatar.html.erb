@@ -6,5 +6,5 @@
         class: "avatar avatar--#{size}",
         alt: "#{user.name}'s avatar") %>
 <% else %>
-  <span class="avatar avatar--#{size} avatar--fallback" aria-hidden="true"><%= user.name[0].upcase %></span>
+  <span class="avatar avatar--<%= size %> avatar--fallback" aria-hidden="true"><%= user.name[0].upcase %></span>
 <% end %>
