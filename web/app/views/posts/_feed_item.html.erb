@@ -1,0 +1,10 @@
+<div class="feed-item">
+  <% if feed_item.repost? %>
+    <div class="feed-item__repost-attribution">
+      <span class="feed-item__repost-icon" aria-hidden="true">&#x1F501;</span>
+      Reposted by <%= link_to "@#{feed_item.reposter.username}", profile_path(feed_item.reposter.username), class: "feed-item__reposter" %>
+    </div>
+  <% end %>
+  <%= render "posts/post", post: feed_item.post,
+        liked_post_ids: liked_post_ids, reposted_post_ids: reposted_post_ids %>
+</div>

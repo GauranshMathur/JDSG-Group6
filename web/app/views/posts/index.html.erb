@@ -12,13 +12,17 @@
   <% end %>
 
   <div id="timeline" class="timeline">
-    <%= render partial: "posts/post", collection: @posts,
-              locals: { liked_post_ids: @liked_post_ids, reposted_post_ids: @reposted_post_ids } %>
+    <% @feed_items.each do |feed_item| %>
+      <%= render "posts/feed_item", feed_item: feed_item,
+            liked_post_ids: @liked_post_ids, reposted_post_ids: @reposted_post_ids %>
+    <% end %>
 
-    <% if @posts.empty? %>
+    <% if @feed_items.empty? %>
       <p id="timeline_empty" class="timeline__empty">Nothing here yet. Be the first to post.</p>
     <% end %>
   </div>
 
-  <%= render "posts/pagination", next_cursor: @next_cursor, url: posts_path(after: @next_cursor) %>
+  <% if @next_page %>
+    <%= link_to "Load more", posts_path(page: @next_page), class: "pagination__link" %>
+  <% end %>
 </div>

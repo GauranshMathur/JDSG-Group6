@@ -101,10 +101,10 @@ grep -q 'turbo-stream action="prepend"' /tmp/smoke-post \
   || fail "the response was not a turbo stream that prepends the post" /tmp/smoke-post
 pass "signed-in user posted, and got a turbo stream back"
 
-# Read back signed out, since the timeline is public — this proves the post was
-# persisted rather than merely echoed into the response.
-curl -sS "$BASE/" | grep -q "$MARKER" \
-  || fail "the new post is not on the feed after reloading it"
+# Read back signed out on the author's profile — the ranked feed may not show a
+# brand-new zero-engagement post on page 1, but the profile page always does.
+curl -sS "$BASE/@$USERNAME" | grep -q "$MARKER" \
+  || fail "the new post is not on the profile after posting it"
 pass "the post survives a round trip and is visible to everyone"
 
 # --- Profiles (F-4.3, F-2.5) --------------------------------------------------
@@ -161,7 +161,7 @@ edit_status=$(curl -sS -b "$COOKIES" -c "$COOKIES" -o /tmp/smoke-update \
   --data-urlencode "post[body]=$edited")
 [ "$edit_status" != "302" ] && fail "editing returned HTTP $edit_status, expected 302" /tmp/smoke-update
 
-curl -sS "$BASE/" | grep -q "$edited" || fail "the edited body is not on the feed"
+curl -sS "$BASE/@$USERNAME" | grep -q "$edited" || fail "the edited body is not on the profile"
 pass "the edit is saved and visible to everyone"
 
 del_status=$(curl -sS -b "$COOKIES" -c "$COOKIES" -o /dev/null \
@@ -171,7 +171,7 @@ del_status=$(curl -sS -b "$COOKIES" -c "$COOKIES" -o /dev/null \
   --data-urlencode "_method=delete")
 [ "$del_status" != "302" ] && fail "deleting returned HTTP $del_status, expected 302"
 
-curl -sS "$BASE/" | grep -q "$edited" && fail "the deleted post is still on the feed"
+curl -sS "$BASE/@$USERNAME" | grep -q "$edited" && fail "the deleted post is still on the profile"
 pass "the author can delete their own post"
 
 # --- Sign out revokes the session (F-2.4) -------------------------------------

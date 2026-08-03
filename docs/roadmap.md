@@ -14,6 +14,7 @@ on a single branch.
 | 3 | **Post ownership and CRUD** — posts belong to users; edit and delete your own | **Done** |
 | 4 | **Navigation and profiles** — sidebar shell, profile pages, edit your profile | **Done** |
 | 5 | **Engagement and hashtags** — likes, reposts, replies, `#tag` pages | **Done** |
+| 5.5 | **Feed v2** — reposts in timeline, ranked feed, load-test seed data | In progress |
 | 6 | **Search** — find posts and people from the sidebar | **Done** |
 | 7 | Follows — follow/unfollow, following-only feed | Later |
 | 8 | Media — image uploads on posts | Later |
@@ -255,6 +256,41 @@ nothing may depend on adapter-specific behaviour. So this milestone ships a plai
 `LIKE`-based search that works identically on both, documented as deliberately basic. Proper
 ranked full-text search is a later, separate decision — taken once the app is actually on
 PostgreSQL, not before.
+
+### Milestone 5.5 — Feed v2 (F-5.5.x)
+
+The feed graduates from reverse-chronological to ranked, and reposts become visible timeline
+entries rather than just a counter. A load-test seed script ships alongside, creating
+realistic volume for performance work.
+
+#### Slice A — Reposts in the timeline (F-5.5.1, F-5.5.2, F-5.5.3)
+
+Reposts currently increment a counter but are invisible in the feed. This slice makes them
+appear as timeline entries, the way Twitter shows "User reposted" above the original post.
+
+- When a user reposts, the repost appears in the global feed at the time it was created.
+- On a user's profile, their reposts are interleaved with their own posts.
+- A "Reposted by @username" attribution appears above the original post partial.
+- The post itself renders identically — same partial, same engagement buttons.
+
+#### Slice B — Ranked feed algorithm (F-5.5.4, F-5.5.5)
+
+Replace the pure reverse-chronological sort with a score that factors in engagement and
+recency. Since the feed is global (no follow graph), the result is the same for everyone
+and can be cached.
+
+- Score formula: `(likes_count + reposts_count * 2 + replies_count) / (age_hours + 2)^1.5`.
+  Weight is intentionally simple — a more sophisticated algorithm is a later decision.
+- Cache the ranked feed since it is universal. Rails low-level cache with a short TTL.
+- The timeline still paginates, but the cursor is score-based rather than time-based.
+
+#### Load-test seed data
+
+- A standalone script (`script/seed-load-test`) that creates 1,000 users and 1,000 posts
+  with lorem ipsum content, random hashtags, likes, reposts, and replies.
+- Works on any database (SQLite or PostgreSQL) — no adapter-specific SQL.
+- Runs outside the application process so it cannot overload the running app.
+- Documented as the setup step for load testing.
 
 ### Explicitly not in this block
 

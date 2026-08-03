@@ -1,0 +1,215 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Populates the database with 1,000 users and 1,000 posts for load testing.
+#
+# Usage:
+#   cd web && bin/rails runner script/seed-load-test
+#
+# Works on any supported database (SQLite, PostgreSQL). Runs outside the
+# application's request cycle, so it cannot interfere with a running server.
+#
+# Idempotent: skips creation when the target counts are already met.
+
+require "securerandom"
+
+USER_COUNT  = 1_000
+POST_COUNT  = 1_000
+PASSWORD    = "loadtest1"
+BATCH_SIZE  = 100
+
+LOREM = [
+  "The quick brown fox jumps over the lazy dog",
+  "Lorem ipsum dolor sit amet consectetur adipiscing elit",
+  "To be or not to be that is the question",
+  "All that glitters is not gold",
+  "A journey of a thousand miles begins with a single step",
+  "In the middle of difficulty lies opportunity",
+  "The only way to do great work is to love what you do",
+  "Stay hungry stay foolish",
+  "Innovation distinguishes between a leader and a follower",
+  "Think different and challenge the status quo",
+  "Move fast and break things then fix them",
+  "Code is poetry written in logic",
+  "Ship it then iterate",
+  "Done is better than perfect",
+  "First solve the problem then write the code",
+  "Make it work make it right make it fast",
+  "Talk is cheap show me the code",
+  "Simplicity is the ultimate sophistication",
+  "Programs must be written for people to read",
+  "The best error message is the one that never shows up"
+].freeze
+
+HASHTAGS = %w[
+  ruby rails webdev coding programming
+  startup tech design ux api
+  testing tdd devops docker kubernetes
+  javascript typescript react opensource
+  database sql performance security
+].freeze
+
+DISPLAY_NAMES = [
+  "Alice", "Bob", "Charlie", "Diana", "Eve", "Frank", "Grace", "Heidi",
+  "Ivan", "Judy", "Karl", "Linda", "Mike", "Nancy", "Oscar", "Peggy",
+  "Quentin", "Rachel", "Steve", "Tina", "Uma", "Victor", "Wendy", "Xander",
+  "Yara", "Zach"
+].freeze
+
+BIOS = [
+  "Building things on the web.",
+  "Coffee-driven developer.",
+  "Open source enthusiast.",
+  "Shipping code since 2010.",
+  "Full-stack developer and occasional writer.",
+  nil
+].freeze
+
+def random_body
+  base = LOREM.sample
+  if rand < 0.4
+    tags = HASHTAGS.sample(rand(1..3)).map { |t| "##{t}" }.join(" ")
+    base = "#{base} #{tags}"
+  end
+  base.truncate(280)
+end
+
+def progress(label, current, total)
+  print "\r  #{label}: #{current}/#{total}" if current % 50 == 0 || current == total
+end
+
+puts "=== Load-test seed ==="
+puts
+
+existing_users = User.count
+if existing_users >= USER_COUNT
+  puts "Users: #{existing_users} already exist (target #{USER_COUNT}), skipping."
+else
+  users_to_create = USER_COUNT - existing_users
+  puts "Creating #{users_to_create} users..."
+
+  created = 0
+  users_to_create.times do |i|
+    n = existing_users + i + 1
+    username = "user#{n}"
+    next if User.exists?(username: username)
+
+    User.create!(
+      username: username,
+      email_address: "#{username}@loadtest.example.com",
+      password: PASSWORD,
+      display_name: rand < 0.7 ? "#{DISPLAY_NAMES.sample} #{n}" : nil,
+      bio: BIOS.sample
+    )
+    created += 1
+    progress("Users", created, users_to_create)
+  end
+  puts
+end
+
+all_user_ids = User.pluck(:id)
+
+existing_posts = Post.count
+if existing_posts >= POST_COUNT
+  puts "Posts: #{existing_posts} already exist (target #{POST_COUNT}), skipping."
+else
+  posts_to_create = POST_COUNT - existing_posts
+  puts "Creating #{posts_to_create} posts..."
+
+  created = 0
+  posts_to_create.times do |i|
+    Post.create!(
+      user_id: all_user_ids.sample,
+      body: random_body,
+      created_at: rand(30.days).seconds.ago
+    )
+    created += 1
+    progress("Posts", created, posts_to_create)
+  end
+  puts
+end
+
+all_post_ids = Post.top_level.pluck(:id)
+
+reply_count = (POST_COUNT * 0.3).to_i
+existing_replies = Post.where.not(parent_id: nil).count
+if existing_replies >= reply_count
+  puts "Replies: #{existing_replies} already exist (target #{reply_count}), skipping."
+else
+  replies_to_create = reply_count - existing_replies
+  puts "Creating #{replies_to_create} replies..."
+
+  created = 0
+  replies_to_create.times do
+    Post.create!(
+      user_id: all_user_ids.sample,
+      body: random_body,
+      parent_id: all_post_ids.sample,
+      created_at: rand(30.days).seconds.ago
+    )
+    created += 1
+    progress("Replies", created, replies_to_create)
+  end
+  puts
+end
+
+like_count = (POST_COUNT * 2.5).to_i
+existing_likes = Like.count
+if existing_likes >= like_count
+  puts "Likes: #{existing_likes} already exist (target #{like_count}), skipping."
+else
+  likes_to_create = like_count - existing_likes
+  puts "Creating #{likes_to_create} likes..."
+
+  all_post_ids_full = Post.pluck(:id)
+  created = 0
+  attempts = 0
+  max_attempts = likes_to_create * 3
+
+  while created < likes_to_create && attempts < max_attempts
+    attempts += 1
+    begin
+      Like.create!(user_id: all_user_ids.sample, post_id: all_post_ids_full.sample)
+      created += 1
+      progress("Likes", created, likes_to_create)
+    rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotUnique
+      next
+    end
+  end
+  puts
+end
+
+repost_count = (POST_COUNT * 0.8).to_i
+existing_reposts = Repost.count
+if existing_reposts >= repost_count
+  puts "Reposts: #{existing_reposts} already exist (target #{repost_count}), skipping."
+else
+  reposts_to_create = repost_count - existing_reposts
+  puts "Creating #{reposts_to_create} reposts..."
+
+  created = 0
+  attempts = 0
+  max_attempts = reposts_to_create * 3
+
+  while created < reposts_to_create && attempts < max_attempts
+    attempts += 1
+    begin
+      Repost.create!(user_id: all_user_ids.sample, post_id: all_post_ids.sample)
+      created += 1
+      progress("Reposts", created, reposts_to_create)
+    rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotUnique
+      next
+    end
+  end
+  puts
+end
+
+puts
+puts "=== Done ==="
+puts "  Users:   #{User.count}"
+puts "  Posts:    #{Post.where(parent_id: nil).count} top-level + #{Post.where.not(parent_id: nil).count} replies"
+puts "  Likes:   #{Like.count}"
+puts "  Reposts: #{Repost.count}"
+puts "  Tags:    #{Tag.count}"
+puts
+puts "Sign in as any user1..user#{USER_COUNT}@loadtest.example.com — password #{PASSWORD.inspect}."

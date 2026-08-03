@@ -12,10 +12,12 @@ class PostsController < ApplicationController
 
   def index
     @post = Post.new
-    @posts = page_of_posts(Post.timeline)
-    @next_cursor = next_cursor_for(@posts)
-    @liked_post_ids = liked_post_ids_for(@posts)
-    @reposted_post_ids = reposted_post_ids_for(@posts)
+    feed = RankedFeed.new(page: (params[:page].to_i if params[:page].present?) || 0)
+    @feed_items = feed.items
+    @next_page = feed.next_page
+    all_posts = @feed_items.map(&:post)
+    @liked_post_ids = liked_post_ids_for(all_posts)
+    @reposted_post_ids = reposted_post_ids_for(all_posts)
   end
 
   def show
@@ -35,10 +37,9 @@ class PostsController < ApplicationController
         format.html { redirect_to posts_path }
       end
     else
-      # The composer is re-rendered with its errors, so the timeline around it
-      # has to be rebuilt too.
-      @posts = page_of_posts(Post.timeline)
-      @next_cursor = next_cursor_for(@posts)
+      feed = RankedFeed.new(page: 0)
+      @feed_items = feed.items
+      @next_page = feed.next_page
       render :index, status: :unprocessable_content
     end
   end
