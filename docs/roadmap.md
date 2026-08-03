@@ -6,6 +6,8 @@ starts** — a milestone is not done until its pull request is green and merged 
 branch. Each milestone gets its own branch and its own pull request; do not stack milestones
 on a single branch.
 
+### App milestones
+
 | # | Milestone | Status |
 | --- | --- | --- |
 | 0 | Repo scaffolding — Rails app in `web/`, Docker, CI | **Done** |
@@ -14,19 +16,25 @@ on a single branch.
 | 3 | **Post ownership and CRUD** — posts belong to users; edit and delete your own | **Done** |
 | 4 | **Navigation and profiles** — sidebar shell, profile pages, edit your profile | **Done** |
 | 5 | **Engagement and hashtags** — likes, reposts, replies, `#tag` pages | **Done** |
-| 5.5 | **Feed v2** — reposts in timeline, ranked feed, load-test seed data | In progress |
+| 5.5 | **Feed v2** — reposts in timeline, ranked feed, load-test seed data | **Done** |
 | 6 | **Search** — find posts and people from the sidebar | **Done** |
-| 7 | Follows — follow/unfollow, following-only feed | Later |
-| 8 | Media — image uploads on posts | Later |
-| 9 | Notifications | Later |
-| 10 | AWS deployment — Terraform, ECS/Fargate, RDS, ElastiCache | TODO |
+| 7 | **Images** — profile avatars and image uploads on posts | Next |
+
+### Infrastructure milestones
+
+Tracked separately from app milestones. These are not sequenced against the app work — they
+can proceed in parallel once the design is agreed.
+
+| # | Milestone | Status |
+| --- | --- | --- |
+| I-1 | AWS deployment — Terraform, ECS/Fargate, RDS, ElastiCache | TODO |
 
 Milestones 0 and 1 were built together, since a feed needs an app to live in.
 
-Milestones 2–6 are the current block of work: authentication, full CRUD on posts, profiles,
-engagement with hashtags, and search. They are listed separately rather than as one milestone
-because each is independently shippable, and because a single change touching auth, ownership,
-navigation, engagement, tagging and search at once is not reviewable.
+Milestones 2–6 (including 5.5) are the completed block of work: authentication, full CRUD on
+posts, profiles, engagement with hashtags, ranked feed, and search. They were built
+separately because each is independently shippable, and because a single change touching
+auth, ownership, navigation, engagement, tagging and search at once is not reviewable.
 
 ## Milestone 1 — The Feed
 
@@ -292,7 +300,22 @@ and can be cached.
 - Runs outside the application process so it cannot overload the running app.
 - Documented as the setup step for load testing.
 
+### Milestone 7 — Images (F-7.x)
+
+Profile avatars and image uploads on posts. Details planned when this milestone is reached.
+
+- A user can upload an avatar image on their profile.
+- A post can carry one or more images.
+- Uploaded images are processed — resized and converted to a web-friendly format (e.g.
+  WebP) — so they are small and fast to load.
+- Image metadata (EXIF, etc.) is stripped on upload for privacy and to reduce file size.
+- Posts reference images via metadata (an association or URL), not by embedding the binary
+  in the post record. The image is loaded asynchronously by the browser, keeping page
+  renders fast regardless of image count or size.
+- Images are stored locally for the proof of concept; cloud storage (S3) is an
+  infrastructure milestone concern.
+
 ### Explicitly not in this block
 
-Follows and a following-only timeline, media and avatars, notifications, moderation and rate
-limiting. Each is a later milestone; none should be started "while we're in there".
+Follows, notifications, moderation and rate limiting. None are currently planned as app
+milestones — they can be added if the scope expands.
