@@ -19,7 +19,7 @@ on a single branch.
 | 5.5 | **Feed v2** — reposts in timeline, ranked feed, load-test seed data | **Done** |
 | 6 | **Search** — find posts and people from the sidebar | **Done** |
 | 6.5 | **Feed caching** — cache the ranked feed, warm on boot, invalidate on engagement | **Done** |
-| 7 | **Images** — profile avatars and image uploads on posts | Next |
+| 7 | **Images** — profile avatars and image uploads on posts | **Done** |
 
 ### Infrastructure milestones
 
@@ -315,19 +315,22 @@ every visitor), it can be cached and only rebuilt when engagement changes.
   restart is served from cache rather than hitting the full query.
 - No adapter-specific SQL — the scoring still happens in Ruby, just less often.
 
-### Milestone 7 — Images (F-7.x)
+### Milestone 7 — Images (F-7.x) — **built**
 
-Profile avatars and image uploads on posts. Details planned when this milestone is reached.
+Per-requirement status is in [`REQUIREMENTS.md`](../REQUIREMENTS.md) (F-7.x). What shipped:
 
-- A user can upload an avatar image on their profile.
-- A post can carry one or more images.
-- Uploaded images are processed — resized and converted to a web-friendly format (e.g.
-  WebP) — so they are small and fast to load.
-- Image metadata (EXIF, etc.) is stripped on upload for privacy and to reduce file size.
-- Posts reference images via metadata (an association or URL), not by embedding the binary
-  in the post record. The image is loaded asynchronously by the browser, keeping page
-  renders fast regardless of image count or size.
-- Images are stored locally for the proof of concept; cloud storage (S3) is an
+- Active Storage enabled with `image_processing` gem and libvips for server-side processing.
+- **Profile avatars (F-7.1):** users upload PNG, JPEG, WebP or GIF. Served as WebP variants
+  at 48px (thumbnail, beside posts) and 128px (display, on profile). Letter fallback when no
+  avatar is set.
+- **Post images (F-7.2):** up to 4 images per post via `has_many_attached :images`. Multi-file
+  upload in the composer with content type validation.
+- **Processing (F-7.3):** all images resized to fit within 600×600 and converted to WebP.
+- **EXIF stripping (F-7.4):** `saver: { strip: true }` on every variant removes metadata.
+- **Async loading (F-7.5):** images are Active Storage attachments referenced by URL, not
+  inline binary. `loading="lazy"` on `<img>` tags defers browser fetch until the image
+  scrolls into view.
+- Images stored locally on disk for the proof of concept; cloud storage (S3) is an
   infrastructure milestone concern.
 
 ### Explicitly not in this block
