@@ -18,8 +18,8 @@ on a single branch.
 | 5 | **Engagement and hashtags** — likes, reposts, replies, `#tag` pages | **Done** |
 | 5.5 | **Feed v2** — reposts in timeline, ranked feed, load-test seed data | **Done** |
 | 6 | **Search** — find posts and people from the sidebar | **Done** |
-| 6.5 | **Feed caching** — cache the ranked feed, warm on boot, invalidate on engagement | Next |
-| 7 | **Images** — profile avatars and image uploads on posts | Later |
+| 6.5 | **Feed caching** — cache the ranked feed, warm on boot, invalidate on engagement | **Done** |
+| 7 | **Images** — profile avatars and image uploads on posts | Next |
 
 ### Infrastructure milestones
 
