@@ -32,8 +32,10 @@
 
   <p class="post__body"><%= render_body_with_hashtags(post.body) %></p>
 
+  <%# The count modifier drives the CSS grid: 1 image renders capped but
+      uncropped-in-width, 2 side by side, 3-4 in a two-column collage. %>
   <% if post.images.attached? %>
-    <div class="post__images">
+    <div class="post__images post__images--<%= post.images.size %>">
       <% post.images.each do |image| %>
         <%= image_tag image.variant(resize_to_limit: Post::IMAGE_FEED_SIZE, format: :webp, saver: { strip: true }),
               class: "post__image",

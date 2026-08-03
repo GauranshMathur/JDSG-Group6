@@ -824,20 +824,58 @@ body {
   align-items: baseline;
 }
 
-/* Post images */
+/* Post images.
+
+   A rounded collage that crops images to fit fixed cells, so a post's height
+   is bounded no matter what shape the photos are. The count modifier set in
+   the post partial picks the grid. */
 
 .post__images {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+  display: grid;
+  gap: 2px;
   margin-top: 0.5rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--colour-border);
+  overflow: hidden;
 }
 
 .post__image {
-  max-width: 100%;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* Without this, an image's intrinsic size sets the grid track's minimum
+     and a tall photo stretches its row instead of being cropped to it. */
+  min-width: 0;
+  min-height: 0;
+}
+
+/* One image keeps its own aspect ratio up to a cap, then crops. */
+.post__images--1 .post__image {
   height: auto;
-  border-radius: 0.75rem;
-  border: 1px solid var(--colour-border);
+  max-height: 510px;
+}
+
+.post__images--2 {
+  grid-template-columns: 1fr 1fr;
+  height: 300px;
+}
+
+/* Three: one full-height on the left, two stacked on the right. */
+.post__images--3 {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  height: 510px;
+}
+
+.post__images--3 .post__image:first-child {
+  grid-row: 1 / 3;
+}
+
+.post__images--4 {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  height: 510px;
 }
 
 .composer__image-btn {
