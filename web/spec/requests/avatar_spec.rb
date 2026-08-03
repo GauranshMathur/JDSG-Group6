@@ -49,6 +49,15 @@ RSpec.describe "Avatar upload" do
 
       expect(response.body).to include("avatar")
     end
+
+    it "gives the fallback its size class rather than a literal \#{size}" do
+      create(:user, username: "ada")
+
+      get profile_path("ada")
+
+      expect(response.body).to include("avatar--display")
+      expect(response.body).not_to include('avatar--#')
+    end
   end
 
   describe "GET /profile/edit (avatar field)" do

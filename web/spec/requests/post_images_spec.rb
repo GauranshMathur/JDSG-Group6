@@ -40,6 +40,21 @@ RSpec.describe "Post images (requests)" do
       expect(response.body).to include("post__images")
     end
 
+    it "tags the image container with the image count so CSS can pick a grid" do
+      p = create(:post, body: "Gallery post")
+      2.times do |i|
+        p.images.attach(
+          io: File.open(Rails.root.join("spec/fixtures/files/avatar.png")),
+          filename: "photo-#{i}.png",
+          content_type: "image/png"
+        )
+      end
+
+      get posts_path
+
+      expect(response.body).to include("post__images--2")
+    end
+
     it "does not render an image container for posts without images" do
       create(:post, body: "Text only")
 
