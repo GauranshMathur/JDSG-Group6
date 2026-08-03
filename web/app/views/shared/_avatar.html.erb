@@ -1,0 +1,10 @@
+<%# Renders a user's avatar or a letter fallback.
+    size: :thumbnail (48px) or :display (128px) %>
+<% size ||= :thumbnail %>
+<% if user.avatar.attached? %>
+  <%= image_tag(size == :thumbnail ? user.avatar_thumbnail : user.avatar_display,
+        class: "avatar avatar--#{size}",
+        alt: "#{user.name}'s avatar") %>
+<% else %>
+  <span class="avatar avatar--#{size} avatar--fallback" aria-hidden="true"><%= user.name[0].upcase %></span>
+<% end %>

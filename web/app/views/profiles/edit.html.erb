@@ -13,6 +13,13 @@
       </ul>
     <% end %>
 
+    <%= form.label :avatar, "Avatar", class: "auth__label" %>
+    <div class="auth__avatar-preview">
+      <%= render "shared/avatar", user: @user, size: :display %>
+    </div>
+    <%= form.file_field :avatar, accept: "image/png,image/jpeg,image/webp,image/gif", class: "auth__input" %>
+    <p class="auth__hint">PNG, JPEG, WebP or GIF. Will be resized and converted to WebP.</p>
+
     <span class="auth__label">Username</span>
     <p class="auth__static">@<%= @user.username %></p>
     <p class="auth__hint">Usernames are permanent — this one is yours for good.</p>

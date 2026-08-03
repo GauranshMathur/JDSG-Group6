@@ -6,6 +6,7 @@ class User < ApplicationRecord
 
   has_secure_password
   has_many :sessions, dependent: :destroy
+  has_one_attached :avatar
 
   # Not dependent: :destroy. Posts outlive the account that wrote them — see
   # ADR 0005 — so destroying a user with posts is refused rather than quietly
@@ -45,11 +46,33 @@ class User < ApplicationRecord
 
   validates :display_name, length: { maximum: MAX_DISPLAY_NAME_LENGTH }
   validates :bio, length: { maximum: MAX_BIO_LENGTH }
+  validate :avatar_content_type_allowed
+
+  AVATAR_CONTENT_TYPES = %w[image/png image/jpeg image/webp image/gif].freeze
+  AVATAR_THUMBNAIL_SIZE = [ 48, 48 ].freeze
+  AVATAR_DISPLAY_SIZE = [ 128, 128 ].freeze
 
   # What the UI shows on the author line: the display name when one is set,
   # falling back to the username. This retires milestone 3's stopgap of showing
   # the email local part.
   def name
     display_name.presence || username
+  end
+
+  def avatar_thumbnail
+    avatar.variant(resize_to_fill: AVATAR_THUMBNAIL_SIZE, format: :webp, saver: { strip: true })
+  end
+
+  def avatar_display
+    avatar.variant(resize_to_fill: AVATAR_DISPLAY_SIZE, format: :webp, saver: { strip: true })
+  end
+
+  private
+
+  def avatar_content_type_allowed
+    return unless avatar.attached?
+    unless AVATAR_CONTENT_TYPES.include?(avatar.blob.content_type)
+      errors.add(:avatar, "must be a PNG, JPEG, WebP or GIF image")
+    end
   end
 end

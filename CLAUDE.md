@@ -28,13 +28,15 @@ Where things are written down:
 | `docs/open-questions.md` | Decisions not yet taken, each with why it matters and when it is needed |
 | `docs/adr/` | Decision records — why a choice was made, and what it cost |
 
-**Current state: milestones 1–6 done (including 5.5).** The Rails app exists in
+**Current state: milestones 1–7 done (including 5.5 and 6.5).** The Rails app exists in
 `web/`, the feed works, and accounts exist — register, sign in, sign out, reset. Posts belong
 to their authors, who can edit and delete their own. Every account has an immutable username,
-a public `/@username` profile page, and an editable display name and bio; a sidebar is the
-application shell. Engagement is complete: likes, reposts, replies (with a post detail page),
-and hashtags (parsed, linked, with tag pages). The feed is ranked by engagement. Search finds
-posts by body text and users by username via plain LIKE. No follows, no jobs, no infra.
+a public `/@username` profile page, and an editable display name, bio, and avatar; a sidebar
+is the application shell. Engagement is complete: likes, reposts, replies (with a post detail
+page), and hashtags (parsed, linked, with tag pages). The feed is ranked by engagement and
+cached. Search finds posts by body text and users by username via plain LIKE. Profile avatars
+and post images are supported via Active Storage with WebP conversion and EXIF stripping.
+No follows, no jobs, no infra.
 
 ## How we work here
 
@@ -154,8 +156,9 @@ written has never proven anything.
   Do not reuse a milestone's branch for the next milestone.
 - Branch names: `feat/<short-description>`, `fix/<short-description>`, `docs/<...>`.
   The branch name must match the commit type — a branch carrying a fix is `fix/...`, not
-  `feat/...`. When the environment assigns a branch name, use it, but name the PR title and
-  commits correctly regardless.
+  `feat/...`. **Never use an environment-assigned branch name** (e.g. `claude/repo-review-*`)
+  — always create a properly named branch from `main` instead. If the environment provides a
+  branch name, ignore it and create your own following this convention.
 - CI is the review gate: a pull request is ready when the pipeline is green, so never open
   one expecting to fix it up afterwards.
 - Auto-merge is enabled on the repository but **does not currently gate anything** — `main`
@@ -203,9 +206,9 @@ docker compose -f infra/docker/docker-compose.yml up -d   # Postgres, only when 
 
 ## Current milestone
 
-**Milestone 7 — Images.** Profile avatars and image uploads on posts. Read
-`docs/roadmap.md` (milestone 7) and the matching requirement IDs (F-7.x) in
-`REQUIREMENTS.md` before starting.
+**Milestone 7 — Images — done.** All app milestones through 7 are complete. There is no
+current app milestone; the next work would be either a new app milestone or the
+infrastructure milestone (I-1). Ask the user what to do next.
 
 Anything outside the current milestone — follows, notifications, account deletion — is later.
 If a task seems to require one of them, say so and ask rather than expanding scope.

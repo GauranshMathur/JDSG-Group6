@@ -119,13 +119,10 @@ body {
   border-radius: 0.75rem;
 }
 
-/* wrap, because a display name can be 50 characters and a handle 20 — on a
-   narrow screen they overlap the timestamp instead of yielding to it. */
 .post__header {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem 0.5rem;
-  align-items: baseline;
+  gap: 0.75rem;
+  align-items: flex-start;
   margin-bottom: 0.25rem;
 }
 
@@ -769,4 +766,87 @@ body {
 .auth__input--textarea {
   resize: vertical;
   font: inherit;
+}
+
+.auth__avatar-preview {
+  margin: 0.25rem 0;
+}
+
+/* Avatars */
+
+.avatar {
+  border-radius: 50%;
+  object-fit: cover;
+  vertical-align: middle;
+}
+
+.avatar--thumbnail {
+  width: 48px;
+  height: 48px;
+}
+
+.avatar--display {
+  width: 128px;
+  height: 128px;
+}
+
+.avatar--fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--colour-accent);
+  color: #ffffff;
+  font-weight: 700;
+  user-select: none;
+}
+
+.avatar--fallback.avatar--thumbnail {
+  font-size: 1.25rem;
+}
+
+.avatar--fallback.avatar--display {
+  font-size: 3rem;
+}
+
+/* Post header with avatar */
+
+.post__avatar-link {
+  flex-shrink: 0;
+  text-decoration: none;
+}
+
+.post__meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.5rem;
+  align-items: baseline;
+}
+
+/* Post images */
+
+.post__images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.post__image {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.75rem;
+  border: 1px solid var(--colour-border);
+}
+
+.composer__file {
+  font-size: 0.875rem;
+  color: var(--colour-muted);
+}
+
+/* Profile avatar */
+
+.profile__avatar {
+  margin-bottom: 0.75rem;
 }
