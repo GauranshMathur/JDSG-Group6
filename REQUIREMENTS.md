@@ -94,7 +94,7 @@ production-ready, and so the work is visible if it ever is deployed.
 | F-6.3 | Search behaves identically on SQLite and PostgreSQL | Met — plain `LIKE` with `sanitize_sql_like`, no adapter-specific SQL |
 | F-6.4 | Results reuse the timeline rendering and cursor pagination | Met — reuses `_post` partial, `TimelinePagination` concern, and `_pagination` partial |
 
-### 1.6.5 Feed v2 (milestone 5.5)
+### 1.6b Feed v2 (milestone 5.5)
 
 | ID | Requirement | Status |
 | --- | --- | --- |
@@ -106,17 +106,12 @@ production-ready, and so the work is visible if it ever is deployed.
 | F-5.5.6 | A load-test seed script creates 1,000 users and 1,000 posts with realistic engagement data | Met — `script/seed-load-test` via `bin/rails runner` |
 | F-5.5.7 | The seed script works on any supported database and runs outside the app process | Met — no adapter-specific SQL, runs via `bin/rails runner` |
 
-### 1.7 Later milestones
-
-Recorded so the shape of the system is visible; none are being built yet.
+### 1.7 Images (milestone 7)
 
 | ID | Requirement | Status |
 | --- | --- | --- |
-| F-7.1 | A user can follow and unfollow another user | Later |
-| F-7.2 | The feed can be filtered to accounts the user follows | Later |
-| F-8.1 | A post can carry one or more images | Later |
-| F-8.2 | A user can set an avatar | Later |
-| F-9.1 | A user is notified of activity on their posts | Later |
+| F-7.1 | A user can upload an avatar image on their profile | Planned |
+| F-7.2 | A post can carry one or more images | Planned |
 
 ---
 
@@ -226,14 +221,10 @@ it depends on the PostgreSQL path — which is itself an untested claim today (N
 
 Explicitly not being built, to keep the current milestone honest:
 
-- The follow graph and any personalised or ranked timeline. "Your feed" in milestones 2–6
-  means the posts you wrote, not a timeline only you can see.
-- Reposts, replies and hashtags — in progress as part of milestone 5.
-- Media — images on posts, and avatars on profiles.
+- The follow graph and any personalised timeline.
 - Notifications.
 - Account deletion.
 - Ranked full-text search. Milestone 6 ships a plain `LIKE` search that works on both
   adapters; anything better is a decision to take once the app is on PostgreSQL.
 - Background jobs. Sidekiq and Redis arrive when a milestone needs them.
-- Any AWS resource, Terraform module or deployment target.
 - Spam controls and moderation. Sign-in rate limiting is an open question, not a commitment.
