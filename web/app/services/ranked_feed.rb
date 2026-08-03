@@ -31,8 +31,10 @@ class RankedFeed
   end
 
   def compute_feed
-    posts = Post.top_level.eager_load(:user).to_a
-    reposts = Repost.eager_load(:user, post: :user).where(post: Post.top_level).to_a
+    posts = Post.top_level.eager_load(:user).includes(user: { avatar_attachment: :blob }).to_a
+    reposts = Repost.eager_load(:user, post: :user)
+                    .includes(user: { avatar_attachment: :blob }, post: { user: { avatar_attachment: :blob } })
+                    .where(post: Post.top_level).to_a
 
     feed = []
 

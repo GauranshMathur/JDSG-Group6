@@ -1,5 +1,9 @@
 <article class="post" id="<%= dom_id(post) %>">
   <header class="post__header">
+    <%= link_to profile_path(post.user.username), class: "post__avatar-link" do %>
+      <%= render "shared/avatar", user: post.user, size: :thumbnail %>
+    <% end %>
+    <div class="post__meta">
     <%= link_to profile_path(post.user.username), class: "post__author" do %>
       <span class="post__author-name"><%= post.user.name %></span>
       <span class="post__author-handle">@<%= post.user.username %></span>
@@ -23,6 +27,7 @@
               form: { data: { turbo_confirm: "Delete this post?" } } %>
       </span>
     <% end %>
+    </div>
   </header>
 
   <p class="post__body"><%= render_body_with_hashtags(post.body) %></p>

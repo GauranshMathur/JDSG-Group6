@@ -34,6 +34,6 @@ class ProfilesController < ApplicationController
     # parameters drop it silently; attr_readonly on the model would raise if
     # anything got past them.
     def profile_params
-      params.require(:user).permit(:display_name, :bio)
+      params.require(:user).permit(:display_name, :bio, :avatar)
     end
 end
