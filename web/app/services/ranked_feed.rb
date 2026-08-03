@@ -1,4 +1,6 @@
 class RankedFeed
+  CACHE_KEY = "ranked_feed"
+  CACHE_TTL = 5.minutes
   PAGE_SIZE = 20
 
   def initialize(page: 0)
@@ -6,16 +8,29 @@ class RankedFeed
   end
 
   def items
-    @items ||= build_feed
+    @items ||= cached_feed.drop(@page * PAGE_SIZE).first(PAGE_SIZE)
   end
 
   def next_page
     @page + 1 if items.size == PAGE_SIZE
   end
 
+  def self.warm
+    Rails.cache.delete(CACHE_KEY)
+    new.send(:cached_feed)
+  end
+
+  def self.bust_cache
+    Rails.cache.delete(CACHE_KEY)
+  end
+
   private
 
-  def build_feed
+  def cached_feed
+    Rails.cache.fetch(CACHE_KEY, expires_in: CACHE_TTL) { compute_feed }
+  end
+
+  def compute_feed
     posts = Post.top_level.eager_load(:user).to_a
     reposts = Repost.eager_load(:user, post: :user).where(post: Post.top_level).to_a
 
@@ -39,10 +54,7 @@ class RankedFeed
       )
     end
 
-    feed
-      .sort_by { |item| -item.score }
-      .drop(@page * PAGE_SIZE)
-      .first(PAGE_SIZE)
+    feed.sort_by { |item| -item.score }
   end
 
   def engagement_score(post, boost_time: nil)
