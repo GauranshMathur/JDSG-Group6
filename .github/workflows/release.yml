@@ -12,6 +12,15 @@ name: Release
 on:
   push:
     branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: >
+          Override the computed version (e.g. "0.8.0"). When set, the version
+          script is skipped and this value is used directly. Use this to re-cut
+          a release that the automated pipeline mis-versioned.
+        required: false
+        type: string
 
 concurrency:
   group: release
@@ -33,6 +42,11 @@ jobs:
         with:
           # The whole history, so the range since the last tag can be walked.
           fetch-depth: 0
+          # Pin to the commit that triggered this run, not the branch tip.
+          # Without this, a second push to main between trigger and checkout
+          # causes the version script to analyze commits it did not trigger
+          # for, and the tag lands on the wrong commit.
+          ref: ${{ github.sha }}
 
       # The derivation lives in .github/scripts/next-version.sh, with tests
       # beside it, because this logic has shipped a wrong tag twice — v0.0.1
@@ -40,7 +54,15 @@ jobs:
       # not be run or tested without pushing.
       - name: Determine next version
         id: next
-        run: .github/scripts/next-version.sh >> "$GITHUB_OUTPUT"
+        env:
+          VERSION_OVERRIDE: ${{ inputs.version }}
+        run: |
+          if [ -n "$VERSION_OVERRIDE" ]; then
+            echo "bump=manual" >> "$GITHUB_OUTPUT"
+            echo "version=${VERSION_OVERRIDE}" >> "$GITHUB_OUTPUT"
+          else
+            .github/scripts/next-version.sh >> "$GITHUB_OUTPUT"
+          fi
 
   release:
     name: Publish release
@@ -55,6 +77,8 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
 
       # Creates the tag at this commit as well as the release, so nothing needs
       # to push a tag separately.
@@ -64,6 +88,7 @@ jobs:
           tag_name: v${{ needs.version.outputs.version }}
           name: v${{ needs.version.outputs.version }}
           generate_release_notes: true
+          target_commitish: ${{ github.sha }}
 
   image:
     name: Build and publish image
@@ -77,6 +102,8 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
 
       # arm64 is built under emulation, since GitHub's standard runners are x86.
       - uses: docker/setup-qemu-action@v3
