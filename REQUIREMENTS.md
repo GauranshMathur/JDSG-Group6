@@ -102,7 +102,7 @@ production-ready, and so the work is visible if it ever is deployed.
 | F-5.5.2 | A user's profile page interleaves their reposts with their own posts | Met — `ProfileFeed` merges user's posts and reposts, sorted by time |
 | F-5.5.3 | A reposted entry shows "Reposted by @username" above the original post | Met — `_feed_item.html.erb` renders attribution above the post partial |
 | F-5.5.4 | The feed is ranked by a score combining engagement (likes, reposts, replies) and recency | Met — `RankedFeed` scores `(engagement + 1) / (age_hours + 2)^1.5` |
-| F-5.5.5 | The ranked feed is cached since it is universal (same for every visitor) | Partial — universal ranking in place; caching ships in milestone 6.5 |
+| F-5.5.5 | The ranked feed is cached since it is universal (same for every visitor) | Met — `Rails.cache` with engagement invalidation and warm-on-boot (milestone 6.5) |
 | F-5.5.6 | A load-test seed script creates 1,000 users and 1,000 posts with realistic engagement data | Met — `script/seed-load-test` via `bin/rails runner` |
 | F-5.5.7 | The seed script works on any supported database and runs outside the app process | Met — no adapter-specific SQL, runs via `bin/rails runner` |
 
@@ -110,9 +110,9 @@ production-ready, and so the work is visible if it ever is deployed.
 
 | ID | Requirement | Status |
 | --- | --- | --- |
-| F-6.5.1 | The ranked feed is cached in `Rails.cache` so repeated requests do not recompute it | Planned |
-| F-6.5.2 | The cache is invalidated when engagement changes (like, repost, reply, new post) | Planned |
-| F-6.5.3 | The cache is warmed on app boot so the first request is fast | Planned |
+| F-6.5.1 | The ranked feed is cached in `Rails.cache` so repeated requests do not recompute it | Met — `Rails.cache.fetch` with 5-minute TTL in `RankedFeed` |
+| F-6.5.2 | The cache is invalidated when engagement changes (like, repost, reply, new post) | Met — `after_commit` callbacks on `Post`, `Like`, and `Repost` call `RankedFeed.bust_cache` |
+| F-6.5.3 | The cache is warmed on app boot so the first request is fast | Met — `config/initializers/warm_ranked_feed.rb` calls `RankedFeed.warm` |
 
 ### 1.7 Images (milestone 7)
 

@@ -12,6 +12,8 @@ class Post < ApplicationRecord
   validates :body, presence: true, length: { maximum: MAX_BODY_LENGTH }
 
   after_save :sync_tags
+  after_create_commit  { RankedFeed.bust_cache }
+  after_destroy_commit { RankedFeed.bust_cache }
 
   # Newest first, with id breaking ties so the ordering is total and stable.
   # Without the tie-break, posts sharing a created_at could swap places between
