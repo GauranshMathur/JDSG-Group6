@@ -206,9 +206,15 @@ docker compose -f infra/docker/docker-compose.yml up -d   # Postgres, only when 
 
 ## Current milestone
 
-**Milestone 7 — Images — done.** All app milestones through 7 are complete. There is no
-current app milestone; the next work would be either a new app milestone or the
-infrastructure milestone (I-1). Ask the user what to do next.
+**The app side is complete.** All app milestones (1–7, including 5.5 and 6.5) are built,
+tested and merged; there is no current or planned app milestone. New app features are a
+scope expansion to raise with the user, not a default.
+
+**Current focus: infrastructure (I-1).** The proposed AWS design is in
+`docs/infrastructure.md`, sequenced as I-1a through I-1d in `docs/roadmap.md`. The design is
+not yet agreed — the rule that no Terraform is written and no cloud resources are created
+until it is, still holds. The blocking inputs (AWS account, region, budget, domain name) are
+in `docs/open-questions.md` and only the user can supply them.
 
 Anything outside the current milestone — follows, notifications, account deletion — is later.
 If a task seems to require one of them, say so and ask rather than expanding scope.
