@@ -321,8 +321,8 @@ Per-requirement status is in [`REQUIREMENTS.md`](../REQUIREMENTS.md) (F-7.x). Wh
 
 - Active Storage enabled with `image_processing` gem and libvips for server-side processing.
 - **Profile avatars (F-7.1):** users upload PNG, JPEG, WebP or GIF. Served as WebP variants
-  at 48px (thumbnail, beside posts) and 128px (display, on profile). Letter fallback when no
-  avatar is set.
+  at 48px (thumbnail, beside posts) and 128px (display, on profile). A default silhouette
+  image (`default-avatar.svg`) renders when no avatar is set.
 - **Post images (F-7.2):** up to 4 images per post via `has_many_attached :images`. Multi-file
   upload in the composer with content type validation.
 - **Processing (F-7.3):** all images resized to fit within 600×600 and converted to WebP.
@@ -332,6 +332,21 @@ Per-requirement status is in [`REQUIREMENTS.md`](../REQUIREMENTS.md) (F-7.x). Wh
   scrolls into view.
 - Images stored locally on disk for the proof of concept; cloud storage (S3) is an
   infrastructure milestone concern.
+
+**Refined after the milestone merged**, in follow-up fix PRs:
+
+- Feed images render in a bounded, cropped collage grid (one image capped at 510px keeping
+  its aspect ratio; two side by side; three and four as a two-column collage with
+  `object-fit: cover`), so a post's height no longer depends on the shape of its photos.
+- The composer's raw file input became a camera-icon button with client-side thumbnail
+  previews (a Stimulus controller).
+- The letter-tile avatar fallback became the default silhouette image, and the post partial
+  moved to a two-column layout — avatar left, with the name row, body, images and actions
+  aligned in a content column.
+- **The production image shipped without libvips** through v0.8.3 — the app booted and served
+  while every image variant request failed. The library is now installed in the runtime
+  image, and the smoke test uploads an image and fetches its processed variant, so CI's
+  container job fails on a missing image library instead of releasing it.
 
 ### Explicitly not in this block
 

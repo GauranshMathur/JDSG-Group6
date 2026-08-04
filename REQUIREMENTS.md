@@ -120,7 +120,7 @@ production-ready, and so the work is visible if it ever is deployed.
 | --- | --- | --- |
 | F-7.1 | A user can upload an avatar image on their profile | **Met** |
 | F-7.2 | A post can carry one or more images | **Met** |
-| F-7.3 | Uploaded images are processed (resized, converted to a web-friendly format) for fast loading | **Met** |
+| F-7.3 | Uploaded images are processed (resized, converted to a web-friendly format) for fast loading | **Met** — resized to fit 600×600 and converted to WebP by libvips. The production image lacked libvips until v0.8.4; the smoke test now exercises a variant so the gap cannot reopen silently |
 | F-7.4 | Image metadata (EXIF, etc.) is stripped on upload | **Met** |
 | F-7.5 | Posts reference images via metadata, not inline binary — images load asynchronously | **Met** |
 
@@ -184,7 +184,7 @@ production-ready, and so the work is visible if it ever is deployed.
 | N-4.3 | Commits follow Conventional Commits, since the version bump is derived from them | Met |
 | N-4.4 | The version is derived automatically; no one edits a version by hand | Met |
 | N-4.5 | The image builds reproducibly from `web/Dockerfile` | Met |
-| N-4.6 | The image is proven to boot and serve traffic before release | Met — CI starts it and polls `/up` |
+| N-4.6 | The image is proven to boot and serve traffic before release | Met — CI starts it, polls `/up`, then runs the full HTTP smoke test against it: register, post, upload an image and fetch its processed variant, edit, delete, sign out. The variant fetch was added after v0.8.0–0.8.3 shipped without libvips — the image booted and served while unable to process a single upload, which `/up` alone can never catch |
 | N-4.7 | Images are tagged with the version, an immutable commit SHA, and `latest` | Met |
 | N-4.8 | Images are published to a container registry on release | Met — GitHub Container Registry |
 | N-4.9 | Published images run on both `linux/amd64` and `linux/arm64` | Met |
