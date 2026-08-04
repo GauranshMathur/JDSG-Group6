@@ -28,7 +28,8 @@ so that each document can be read on its own and changed without rewriting the r
 | [Database](docs/database.md) | SQLite today, and the switch to PostgreSQL |
 | [Latency](docs/latency.md) | How the app should degrade when the database is slow — planned, not built |
 | [CI/CD](docs/ci-cd.md) | The pipeline, versioning, and how releases are cut |
-| [Infrastructure](docs/infrastructure.md) | AWS, entirely a TODO |
+| [Infrastructure](docs/infrastructure.md) | The AWS reference design, realized locally on floci + k3s |
+| [floci](docs/floci.md) | The local AWS emulator: how it works, and what can and can't be done with it |
 | [Open questions](docs/open-questions.md) | Decisions not yet taken — a live list, pruned as they are answered |
 | [Decision records](docs/adr/) | Why a choice was made, and what it cost |
 

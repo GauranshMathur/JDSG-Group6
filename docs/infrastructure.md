@@ -21,7 +21,7 @@ availability zones, and every service the design names.
 | Piece | Tool | Note |
 | --- | --- | --- |
 | Provisioning | Terraform (v1.10+), AWS provider | Applied against floci's endpoint (`http://localhost:4566`), not real AWS — moving to real AWS would be a provider endpoint change |
-| AWS emulation | [floci](https://floci.io/floci/) | Free, MIT-licensed local AWS emulator: 69 services including EKS, RDS, S3, ECR, Route 53, SSM, ElastiCache. One container, one port, no feature gates. LocalStack-compatible endpoint |
+| AWS emulation | [floci](https://floci.io/floci/) | Free, MIT-licensed local AWS emulator: 69 services including EKS, RDS, S3, ECR, Route 53, SSM, ElastiCache. One container, one port, no feature gates. LocalStack-compatible endpoint. **How it works and how deep each emulation goes: [`floci.md`](floci.md)** |
 | Kubernetes | k3s — launched *by* floci's EKS emulation | floci's EKS runs real k3s clusters in Docker (`rancher/k3s`) with a live Kubernetes API server, so `terraform apply` on an EKS cluster yields an actual cluster to `kubectl` into. Node add/remove is a container operation, which is what makes autoscaling demonstrable locally |
 | GitOps | Flux | Agreed as the direction but explicitly **not on the critical path** — nice to add once the platform stands, not a blocker for anything |
 | Images | GHCR (already published on every release) | The reference design says ECR; floci emulates ECR, and the cluster can also pull the GHCR images that already exist — I-1a decides which |
@@ -35,6 +35,11 @@ availability zones, and every service the design names.
 - If any service's emulation turns out too shallow in practice, the fallback holds: plain
   k3d plus the same Kubernetes manifests, with the Terraform for that piece proven by
   `plan`. I-1a's verification decides service by service.
+- Three gaps are already known from floci's own docs and change how parts of this design
+  are realized locally — **no ALB emulation** (Traefik in k3s plays its part), **node
+  groups are API metadata** (node-scaling demos happen at the k3s layer), and **no RDS
+  Multi-AZ/failover** (single Postgres, with an in-cluster operator if the failover
+  demonstration is wanted). Detail and the full can/can't list: [`floci.md`](floci.md).
 
 ## The reference architecture
 
