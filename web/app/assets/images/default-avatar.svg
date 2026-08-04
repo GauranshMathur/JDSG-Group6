@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Default avatar">
+  <defs>
+    <clipPath id="circle"><circle cx="64" cy="64" r="64"/></clipPath>
+  </defs>
+  <g clip-path="url(#circle)">
+    <rect width="128" height="128" fill="#e9ebee"/>
+    <circle cx="64" cy="50" r="24" fill="#aeb6bf"/>
+    <path d="M64 82c-27 0-42 15-46 32l-3 14h98l-3-14c-4-17-19-32-46-32z" fill="#aeb6bf"/>
+  </g>
+</svg>

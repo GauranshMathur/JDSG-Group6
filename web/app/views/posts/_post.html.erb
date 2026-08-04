@@ -1,58 +1,59 @@
 <article class="post" id="<%= dom_id(post) %>">
-  <header class="post__header">
-    <%= link_to profile_path(post.user.username), class: "post__avatar-link" do %>
-      <%= render "shared/avatar", user: post.user, size: :thumbnail %>
-    <% end %>
-    <div class="post__meta">
-    <%= link_to profile_path(post.user.username), class: "post__author" do %>
-      <span class="post__author-name"><%= post.user.name %></span>
-      <span class="post__author-handle">@<%= post.user.username %></span>
-    <% end %>
-    <time class="post__time" datetime="<%= post.created_at.iso8601 %>">
-      <%= time_ago_in_words(post.created_at) %> ago
-    </time>
-
-    <% if post.edited? %>
-      <span class="post__edited" title="Edited <%= time_ago_in_words(post.updated_at) %> ago">edited</span>
-    <% end %>
-
-    <%# Only the author is offered these. The controller scopes the actions
-        themselves, so hiding the links is presentation, not protection. %>
-    <% if post.written_by?(Current.user) %>
-      <span class="post__actions">
-        <%= link_to "Edit", edit_post_path(post), class: "post__action" %>
-        <%= button_to "Delete", post_path(post),
-              method: :delete,
-              class: "post__action post__action--danger",
-              form: { data: { turbo_confirm: "Delete this post?" } } %>
-      </span>
-    <% end %>
-    </div>
-  </header>
-
-  <p class="post__body"><%= render_body_with_hashtags(post.body) %></p>
-
-  <%# The count modifier drives the CSS grid: 1 image renders capped but
-      uncropped-in-width, 2 side by side, 3-4 in a two-column collage. %>
-  <% if post.images.attached? %>
-    <div class="post__images post__images--<%= post.images.size %>">
-      <% post.images.each do |image| %>
-        <%= image_tag image.variant(resize_to_limit: Post::IMAGE_FEED_SIZE, format: :webp, saver: { strip: true }),
-              class: "post__image",
-              loading: "lazy",
-              alt: "" %>
-      <% end %>
-    </div>
+  <%= link_to profile_path(post.user.username), class: "post__avatar-link" do %>
+    <%= render "shared/avatar", user: post.user, size: :thumbnail %>
   <% end %>
 
-  <footer class="post__footer">
-    <%= link_to post_path(post), class: "reply-count" do %>
-      <span class="reply-count__icon" aria-hidden="true">&#x1F4AC;</span>
-      <span class="reply-count__count"><%= post.replies_count %></span>
+  <div class="post__content">
+    <header class="post__header">
+      <%= link_to profile_path(post.user.username), class: "post__author" do %>
+        <span class="post__author-name"><%= post.user.name %></span>
+        <span class="post__author-handle">@<%= post.user.username %></span>
+      <% end %>
+      <time class="post__time" datetime="<%= post.created_at.iso8601 %>">
+        <%= time_ago_in_words(post.created_at) %> ago
+      </time>
+
+      <% if post.edited? %>
+        <span class="post__edited" title="Edited <%= time_ago_in_words(post.updated_at) %> ago">edited</span>
+      <% end %>
+
+      <%# Only the author is offered these. The controller scopes the actions
+          themselves, so hiding the links is presentation, not protection. %>
+      <% if post.written_by?(Current.user) %>
+        <span class="post__actions">
+          <%= link_to "Edit", edit_post_path(post), class: "post__action" %>
+          <%= button_to "Delete", post_path(post),
+                method: :delete,
+                class: "post__action post__action--danger",
+                form: { data: { turbo_confirm: "Delete this post?" } } %>
+        </span>
+      <% end %>
+    </header>
+
+    <p class="post__body"><%= render_body_with_hashtags(post.body) %></p>
+
+    <%# The count modifier drives the CSS grid: 1 image renders capped but
+        uncropped-in-width, 2 side by side, 3-4 in a two-column collage. %>
+    <% if post.images.attached? %>
+      <div class="post__images post__images--<%= post.images.size %>">
+        <% post.images.each do |image| %>
+          <%= image_tag image.variant(resize_to_limit: Post::IMAGE_FEED_SIZE, format: :webp, saver: { strip: true }),
+                class: "post__image",
+                loading: "lazy",
+                alt: "" %>
+        <% end %>
+      </div>
     <% end %>
-    <%= render "likes/like_button", post: post,
-          liked: (defined?(liked_post_ids) && liked_post_ids&.include?(post.id)) %>
-    <%= render "reposts/repost_button", post: post,
-          reposted: (defined?(reposted_post_ids) && reposted_post_ids&.include?(post.id)) %>
-  </footer>
+
+    <footer class="post__footer">
+      <%= link_to post_path(post), class: "reply-count" do %>
+        <span class="reply-count__icon" aria-hidden="true">&#x1F4AC;</span>
+        <span class="reply-count__count"><%= post.replies_count %></span>
+      <% end %>
+      <%= render "likes/like_button", post: post,
+            liked: (defined?(liked_post_ids) && liked_post_ids&.include?(post.id)) %>
+      <%= render "reposts/repost_button", post: post,
+            reposted: (defined?(reposted_post_ids) && reposted_post_ids&.include?(post.id)) %>
+    </footer>
+  </div>
 </article>

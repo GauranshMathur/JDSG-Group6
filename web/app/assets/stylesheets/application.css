@@ -112,17 +112,28 @@ body {
   padding: 2rem 0;
 }
 
+/* Two columns, X-style: the avatar on the left, everything else — name row,
+   body, images, actions — aligned in the content column beside it. */
 .post {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
   padding: 1rem;
   background: var(--colour-surface);
   border: 1px solid var(--colour-border);
   border-radius: 0.75rem;
 }
 
+.post__content {
+  flex: 1;
+  min-width: 0;
+}
+
 .post__header {
   display: flex;
-  gap: 0.75rem;
-  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.5rem;
+  align-items: baseline;
   margin-bottom: 0.25rem;
 }
 
@@ -790,38 +801,11 @@ body {
   height: 128px;
 }
 
-.avatar--fallback {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--colour-accent);
-  color: #ffffff;
-  font-weight: 700;
-  user-select: none;
-}
-
-.avatar--fallback.avatar--thumbnail {
-  font-size: 1.25rem;
-}
-
-.avatar--fallback.avatar--display {
-  font-size: 3rem;
-}
-
 /* Post header with avatar */
 
 .post__avatar-link {
   flex-shrink: 0;
   text-decoration: none;
-}
-
-.post__meta {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem 0.5rem;
-  align-items: baseline;
 }
 
 /* Post images.
