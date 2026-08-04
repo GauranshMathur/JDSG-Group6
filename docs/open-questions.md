@@ -87,6 +87,32 @@ catch. The measurement harness is a separate, larger piece.
 
 ---
 
+## Infrastructure
+
+The AWS design is proposed in [`infrastructure.md`](infrastructure.md). Two inputs it cannot
+supply for itself:
+
+### Which AWS account and region, and whose budget?
+
+The design lands at roughly $45/month, always on — the ALB and the never-scales-to-zero
+Fargate task are most of it.
+
+**Why it matters:** Terraform needs an account to point at before step I-1a, and a proof of
+concept that quietly bills someone indefinitely is how POCs become incidents.
+
+**When:** before any Terraform is written. It is the first blocker in the sequencing.
+
+### What domain name?
+
+The ACM certificate, the ALB listener and `RAILS_FORCE_SSL` all hang off a real hostname.
+
+**Why it matters:** without one, step I-1c can only ship plain HTTP on an ALB DNS name, which
+re-opens N-3.11 in production rather than closing it.
+
+**When:** before I-1c. Steps I-1a and I-1b do not need it.
+
+---
+
 ## Delivery
 
 ### Required status checks and up-to-date branches

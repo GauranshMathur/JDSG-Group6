@@ -28,7 +28,15 @@ can proceed in parallel once the design is agreed.
 
 | # | Milestone | Status |
 | --- | --- | --- |
-| I-1 | AWS deployment — Terraform, ECS/Fargate, RDS, ElastiCache | TODO |
+| I-1a | Terraform skeleton, ECR repository, GitHub OIDC role | Design proposed — see [`infrastructure.md`](infrastructure.md) |
+| I-1b | VPC, subnets, security groups, RDS PostgreSQL + PostgreSQL CI job (N-6.7) | Design proposed |
+| I-1c | ECS/Fargate service, ALB, TLS | Design proposed — blocked on a domain name |
+| I-1d | S3 for Active Storage | Design proposed |
+
+ElastiCache is no longer part of I-1: Redis arrives with Sidekiq, and nothing needs a
+background job yet. The proposed design, its costs, and what it deliberately leaves out are
+in [`infrastructure.md`](infrastructure.md); the questions only its owner can answer
+(account, region, budget, domain) are in [`open-questions.md`](open-questions.md).
 
 Milestones 0 and 1 were built together, since a feed needs an app to live in.
 
