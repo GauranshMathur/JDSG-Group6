@@ -42,12 +42,20 @@ RSpec.describe "Avatar upload" do
       expect(response.body).to include("avatar")
     end
 
-    it "shows a fallback when no avatar is attached" do
+    it "shows the default avatar image when no avatar is attached" do
       create(:user, username: "ada")
 
       get profile_path("ada")
 
-      expect(response.body).to include("avatar")
+      expect(response.body).to include("default-avatar")
+    end
+
+    it "shows the default avatar in the feed for authors without one" do
+      create(:post, body: "No avatar here", user: create(:user, username: "ada"))
+
+      get posts_path
+
+      expect(response.body).to include("default-avatar")
     end
 
     it "gives the fallback its size class rather than a literal \#{size}" do

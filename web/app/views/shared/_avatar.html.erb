@@ -1,4 +1,4 @@
-<%# Renders a user's avatar or a letter fallback.
+<%# Renders a user's avatar, or the default silhouette when none is uploaded.
     size: :thumbnail (48px) or :display (128px) %>
 <% size ||= :thumbnail %>
 <% if user.avatar.attached? %>
@@ -6,5 +6,5 @@
         class: "avatar avatar--#{size}",
         alt: "#{user.name}'s avatar") %>
 <% else %>
-  <span class="avatar avatar--<%= size %> avatar--fallback" aria-hidden="true"><%= user.name[0].upcase %></span>
+  <%= image_tag "default-avatar.svg", class: "avatar avatar--#{size}", alt: "" %>
 <% end %>
