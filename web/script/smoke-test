@@ -107,6 +107,42 @@ curl -sS "$BASE/@$USERNAME" | grep -q "$MARKER" \
   || fail "the new post is not on the profile after posting it"
 pass "the post survives a round trip and is visible to everyone"
 
+# --- Posting an image (F-7.2, F-7.3) -------------------------------------------
+#
+# Fetching the resized variant is the only request in the stack that exercises
+# libvips. The production image once shipped without it: the app booted, served
+# every page, and passed every check above while unable to process a single
+# image. So this uploads a real PNG and demands the processed variant back.
+
+IMAGE_FILE="$(mktemp)"
+trap 'rm -f "$COOKIES" "$IMAGE_FILE"' EXIT
+base64 -d > "$IMAGE_FILE" <<'PNG'
+iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==
+PNG
+
+img_status=$(curl -sS -b "$COOKIES" -c "$COOKIES" -o /tmp/smoke-image-post \
+  -w '%{http_code}' -X POST "$BASE/posts" \
+  -H 'Accept: text/vnd.turbo-stream.html' \
+  -F "authenticity_token=$token" \
+  -F "post[body]=$MARKER with image" \
+  -F "post[images][]=@$IMAGE_FILE;type=image/png;filename=smoke.png")
+[ "$img_status" != "200" ] && fail "posting with an image returned HTTP $img_status, expected 200" /tmp/smoke-image-post
+
+variant_url=$(grep -oE '(src|href)="[^"]*/rails/active_storage/representations/[^"]*"' /tmp/smoke-image-post \
+  | head -1 | sed 's/^[a-z]*="//; s/"$//')
+[ -z "$variant_url" ] && fail "the response to posting an image contains no variant URL" /tmp/smoke-image-post
+
+# The URL may be a path or absolute depending on the helper; handle both.
+case "$variant_url" in
+  http*) : ;;
+  *) variant_url="$BASE$variant_url" ;;
+esac
+
+variant_status=$(curl -sSL -o /tmp/smoke-variant -w '%{http_code}' "$variant_url")
+[ "$variant_status" != "200" ] \
+  && fail "fetching the image variant returned HTTP $variant_status — is libvips installed?" /tmp/smoke-variant
+pass "an uploaded image comes back as a processed variant"
+
 # --- Profiles (F-4.3, F-2.5) --------------------------------------------------
 
 # No cookies on purpose: profiles are public.
