@@ -210,11 +210,16 @@ docker compose -f infra/docker/docker-compose.yml up -d   # Postgres, only when 
 tested and merged; there is no current or planned app milestone. New app features are a
 scope expansion to raise with the user, not a default.
 
-**Current focus: infrastructure (I-1).** The proposed AWS design is in
-`docs/infrastructure.md`, sequenced as I-1a through I-1d in `docs/roadmap.md`. The design is
-not yet agreed — the rule that no Terraform is written and no cloud resources are created
-until it is, still holds. The blocking inputs (AWS account, region, budget, domain name) are
-in `docs/open-questions.md` and only the user can supply them.
+**Current focus: infrastructure (I-1), local-first.** There will never be a real AWS
+account: the enterprise AWS architecture (EKS, ALB, Multi-AZ RDS, S3) is the *reference
+design*, realized entirely locally — Terraform against a local AWS emulator, k3s standing in
+for EKS. The design and the diagram are in `docs/infrastructure.md` and
+`docs/diagrams/aws-reference-architecture.drawio`, sequenced as I-1a through I-1e in
+`docs/roadmap.md`. The emulator is floci (floci.io) — free, MIT, its EKS emulation runs
+real k3s clusters. No Terraform until I-1a's toolchain verification is done; no real cloud
+resources, ever. Deploying will force
+three app changes — Postgres, shared cache, S3 media — recorded in the design doc, to be
+made when they block, not before.
 
 Anything outside the current milestone — follows, notifications, account deletion — is later.
 If a task seems to require one of them, say so and ask rather than expanding scope.
@@ -228,7 +233,8 @@ Two rules that carry forward:
 
 ## Things to leave alone
 
-- Do not create AWS resources or write Terraform until the architecture is agreed.
+- Never create real cloud resources — the deployment is local by design. Do not write
+  Terraform until the I-1a toolchain verification is done and the design agreed.
 - Releases publish to GHCR. Do not uncomment the ECR block in
   `.github/workflows/release.yml` until the ECR repository and the GitHub OIDC role
   actually exist.
