@@ -12,9 +12,13 @@ ever billed; local clusters and emulators are free to create and destroy.
 
 The architecture diagram lives at
 [`diagrams/aws-reference-architecture.drawio`](diagrams/aws-reference-architecture.drawio)
-(draw.io, official AWS icon set — open with [draw.io](https://app.diagrams.net) or the
-desktop app). It shows the full enterprise deployment: ingress and egress paths, two
-availability zones, and every service the design names.
+(draw.io, official AWS icon set). **Open it online, straight from this repository:**
+[edit in app.diagrams.net](https://app.diagrams.net/#HGauranshMathur%2FJDSG-Group6%2Fmain%2Fdocs%2Fdiagrams%2Faws-reference-architecture.drawio)
+— authorize GitHub when prompted and edits can be committed back to the repo from the
+editor. It shows the full enterprise deployment: the edge chain (Route 53, CloudFront, WAF,
+ACM), both load balancer types, ingress and egress paths, the Kubernetes objects inside the
+cluster, two availability zones, encryption and identity (KMS, IAM/IRSA), and the backup
+and DR-region story.
 
 ## Toolchain
 
@@ -43,38 +47,51 @@ availability zones, and every service the design names.
 
 ## The reference architecture
 
-What the diagram shows, in words:
+What the diagram shows, in words — four layers:
 
-```
-Internet ──▶ Route 53 ──▶ ALB (public subnets, 2 AZs, TLS via ACM)
-                              │  ingress: 443 only
-                              ▼
-              EKS — managed node groups (private subnets, 2 AZs)
-              web pods × N · HPA · cluster autoscaler · PDBs
-                    │                │               │
-                    ▼                ▼               ▼
-              RDS PostgreSQL    S3 (Active      ECR (pull via
-              (Multi-AZ,        Storage media)  VPC endpoint)
-               primary+standby)
-                    
-              egress: NAT gateway per AZ · secrets from SSM via IRSA
-              logs/metrics: CloudWatch (reference) / Prometheus+Grafana (local)
-```
+**Edge (global).** Users resolve DNS at Route 53 and hit **CloudFront** (the CDN) over 443,
+with **WAF** attached (managed rule sets) and the certificate from **ACM**. CloudFront's
+origin is the ALB — so the ALB is the only ingress into the VPC, and it never sees the
+internet directly. **IAM** (roles, IRSA for pods) and **KMS** (encryption keys for RDS, S3
+and EBS) sit at this layer too, since they are global services everything else leans on.
 
-Ingress: the internet reaches exactly one thing — the ALB on 443. Everything else sits in
-private subnets and is reachable only through security groups scoped to its consumer
-(ALB → pods, pods → RDS 5432, pods → S3/ECR via gateway endpoints). Egress from the private
-subnets flows through a NAT gateway per AZ.
+**Ingress into the cluster.** Two load balancer types, deliberately: the **ALB** is the L7
+path — created and kept in sync by the AWS Load Balancer Controller *from* the Kubernetes
+`Ingress` resource, TLS from ACM — and an **NLB** is the L4 path (TLS passthrough,
+non-HTTP), which fronts the in-cluster ingress controller. The local realization uses the
+NLB-shaped path: Traefik in k3s plays the ingress controller, since floci emulates neither
+load balancer.
+
+**Inside the cluster** (private subnets, two AZs, an EKS managed node group per zone):
+the Kubernetes objects are drawn explicitly — the ingress controller, the `Ingress` rule
+mapping the hostname to a `Service` (ClusterIP), the `Deployment` running web pods
+(replicas ≥ 2, readiness probing `/up`, a PodDisruptionBudget), the **HPA** scaling
+replicas, the **Cluster Autoscaler** scaling node groups, and a **PVC** on the EBS CSI
+driver (gp3) for stateful add-ons like Prometheus. Pods reach RDS on 5432, S3 for media,
+and SSM for secrets via IRSA; nodes pull images from ECR; egress from private subnets goes
+NAT gateway → **Network Firewall** (egress inspection) per AZ. Security groups scope every
+hop; nothing in a private subnet is internet-reachable.
+
+**Reliability and recovery.** Within the region: Multi-AZ everything, synchronous RDS
+replication to the standby, and **AWS Backup** running RDS and EBS plans with
+point-in-time recovery into a vault. Across regions: a **DR region in pilot-light shape** —
+no compute runs there; S3 cross-region replication and cross-region backup-vault copies
+keep the data warm, and recovery is `terraform apply` into the DR region, restore RDS from
+the copied snapshots, point Active Storage at the replica bucket, and Route 53
+health-check failover flips DNS. RTO is the apply-plus-restore time; RPO is the
+replication/snapshot lag.
 
 Resiliency, and how each piece is demonstrated locally:
 
 | Reference (AWS) | What it survives | Local demonstration |
 | --- | --- | --- |
-| Two AZs everywhere | Loss of a data centre | Two k3d node groups labelled as zones; delete one and watch rescheduling |
-| EKS managed node group + cluster autoscaler | Node loss; load growth | `k3d node create/delete`; HPA scales pods, node count follows |
+| Two AZs everywhere | Loss of a data centre | Two k3s node groups labelled as zones; delete one and watch rescheduling |
+| EKS node groups + cluster autoscaler | Node loss; load growth | Join/remove k3s agent containers (node groups are metadata in floci — see [`floci.md`](floci.md)); HPA scales pods, node count follows |
 | ≥2 web replicas + PodDisruptionBudget | Deploys and drains without downtime | Rolling deploy under load; `kubectl drain` |
-| RDS Multi-AZ (primary + standby) | Database instance loss | Postgres in-cluster with an operator (e.g. CloudNativePG) failing over, or accepted as single-instance with the gap recorded |
-| ALB health checks → pod readiness | Routing to a dead pod | Ingress + readiness probes against the app's `/up` |
+| RDS Multi-AZ (primary + standby) | Database instance loss | Postgres in-cluster with an operator (e.g. CloudNativePG) failing over — floci's RDS has no Multi-AZ, so the failover demo runs in-cluster |
+| ALB/NLB health checks → pod readiness | Routing to a dead pod | Traefik + readiness probes against the app's `/up` |
+| AWS Backup + PITR | Bad deploy, data corruption | Postgres dump/restore exercised against the local database |
+| DR region (pilot light): S3 CRR, vault copies, Route 53 failover | Loss of a region | **Reference-only.** Demonstrated on the diagram and in words — at most a second floci endpoint. The one layer that stays paper |
 
 ## What this forces in the app — read before deploying
 
