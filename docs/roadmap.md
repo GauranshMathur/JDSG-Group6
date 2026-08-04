@@ -36,9 +36,10 @@ can proceed in parallel once the design is agreed.
 
 **The direction changed after the first proposal:** there will never be a real AWS account.
 The AWS architecture (EKS, ALB, Multi-AZ RDS, S3 — the full enterprise shape) is the
-*reference design*, and it is realized locally — Terraform against a local AWS emulator,
-k3s standing in for EKS. The design, the local mapping, and what it forces in the app are
-in [`infrastructure.md`](infrastructure.md). ElastiCache stays out until Sidekiq exists.
+*reference design*, and it is realized locally — Terraform against
+[floci](https://floci.io/floci/), a free local AWS emulator whose EKS emulation runs real
+k3s clusters. The design, the local mapping, and what it forces in the app are in
+[`infrastructure.md`](infrastructure.md). ElastiCache stays out until Sidekiq exists.
 
 Milestones 0 and 1 were built together, since a feed needs an app to live in.
 

@@ -20,17 +20,21 @@ availability zones, and every service the design names.
 
 | Piece | Tool | Note |
 | --- | --- | --- |
-| Provisioning | Terraform, AWS provider | Applied against the local emulator via its Terraform wrapper, not real AWS |
-| AWS emulation | LocalStack (referred to as "floci" in discussion — **open: confirm this is the intended tool**) | Emulates the AWS APIs locally; its EKS support runs real k3d/k3s clusters under the hood |
-| Kubernetes | k3s (via k3d — k3s nodes as containers) | The EKS stand-in. Node add/remove is a container operation, which is what makes autoscaling demonstrable locally |
+| Provisioning | Terraform (v1.10+), AWS provider | Applied against floci's endpoint (`http://localhost:4566`), not real AWS — moving to real AWS would be a provider endpoint change |
+| AWS emulation | [floci](https://floci.io/floci/) | Free, MIT-licensed local AWS emulator: 69 services including EKS, RDS, S3, ECR, Route 53, SSM, ElastiCache. One container, one port, no feature gates. LocalStack-compatible endpoint |
+| Kubernetes | k3s — launched *by* floci's EKS emulation | floci's EKS runs real k3s clusters in Docker (`rancher/k3s`) with a live Kubernetes API server, so `terraform apply` on an EKS cluster yields an actual cluster to `kubectl` into. Node add/remove is a container operation, which is what makes autoscaling demonstrable locally |
 | GitOps | Flux | Agreed as the direction but explicitly **not on the critical path** — nice to add once the platform stands, not a blocker for anything |
-| Images | GHCR (already published on every release) | The reference design says ECR; locally the cluster pulls the GHCR images that already exist |
+| Images | GHCR (already published on every release) | The reference design says ECR; floci emulates ECR, and the cluster can also pull the GHCR images that already exist — I-1a decides which |
 
-**One recorded risk:** LocalStack's EKS emulation is a paid (Pro) feature; the community
-edition covers core services (S3, SSM, IAM and friends) but not EKS. If a licence is not
-available, the fallback is plain **k3d + the same Kubernetes manifests**, with the
-Terraform EKS module proven by `plan` rather than `apply`. The Kubernetes-side work — the
-part this project is actually exercising — is identical in both cases.
+**Recorded constraints, honestly:**
+
+- floci's "real Docker" services — EKS included — need Docker socket access on the host.
+- An emulator proves *wiring*: that the Terraform is coherent and the app runs on what it
+  stands up. It does not prove AWS behaviour — quotas, IAM edge cases, managed-service
+  failure modes stay unproven. Accepted by design, since nothing will ever run on real AWS.
+- If any service's emulation turns out too shallow in practice, the fallback holds: plain
+  k3d plus the same Kubernetes manifests, with the Terraform for that piece proven by
+  `plan`. I-1a's verification decides service by service.
 
 ## The reference architecture
 

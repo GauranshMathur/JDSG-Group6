@@ -215,8 +215,9 @@ account: the enterprise AWS architecture (EKS, ALB, Multi-AZ RDS, S3) is the *re
 design*, realized entirely locally — Terraform against a local AWS emulator, k3s standing in
 for EKS. The design and the diagram are in `docs/infrastructure.md` and
 `docs/diagrams/aws-reference-architecture.drawio`, sequenced as I-1a through I-1e in
-`docs/roadmap.md`. No Terraform until I-1a's toolchain question (see
-`docs/open-questions.md`) is answered; no real cloud resources, ever. Deploying will force
+`docs/roadmap.md`. The emulator is floci (floci.io) — free, MIT, its EKS emulation runs
+real k3s clusters. No Terraform until I-1a's toolchain verification is done; no real cloud
+resources, ever. Deploying will force
 three app changes — Postgres, shared cache, S3 media — recorded in the design doc, to be
 made when they block, not before.
 

@@ -90,22 +90,12 @@ catch. The measurement harness is a separate, larger piece.
 ## Infrastructure
 
 The design is in [`infrastructure.md`](infrastructure.md): the enterprise AWS architecture
-as the reference, realized entirely locally. The earlier questions about an AWS account,
-budget and domain name are answered by the premise — there will never be a real account,
-so nothing bills and TLS terminates against a local hostname.
-
-### Is "floci" LocalStack — and is its EKS emulation available to us?
-
-The discussion named the local deployment tool "floci"; everything described (Terraform
-applied locally, many managed services emulated, an EKS mode that runs k3s underneath)
-matches LocalStack and its `tflocal` wrapper, but the name has not been confirmed. And
-LocalStack's EKS emulation is a paid Pro feature — the free tier does not include it.
-
-**Why it matters:** this decides whether Terraform's EKS module is proven by `apply`
-(emulator available) or only by `plan` (fallback: plain k3d plus the same Kubernetes
-manifests). The Kubernetes-side work is identical either way, so nothing else blocks on it.
-
-**When:** I-1a — verifying the toolchain is that step's whole job.
+as the reference, realized entirely locally on [floci](https://floci.io/floci/) — a free,
+MIT-licensed AWS emulator whose EKS emulation runs real k3s clusters. The earlier questions
+about an AWS account, budget and domain name are answered by the premise — there will never
+be a real account, so nothing bills and TLS terminates against a local hostname. Whether
+floci's emulation is deep enough for each service in the design is not an open question but
+I-1a's verification work.
 
 ### Shared cache: Solid Cache or Redis?
 
