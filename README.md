@@ -36,6 +36,21 @@ so that each document can be read on its own and changed without rewriting the r
 Contributor conventions live in [`CLAUDE.md`](CLAUDE.md) — layout rules, commit format,
 testing expectations and the things not to touch.
 
+## Architecture
+
+The enterprise AWS reference design — realized entirely locally, since there will never be a
+real AWS account. The reasoning, layer by layer, is in
+[docs/infrastructure.md](docs/infrastructure.md).
+
+![AWS reference architecture](docs/diagrams/aws-reference-architecture.svg)
+
+This image never goes stale: the source of truth is
+[`aws-reference-architecture.drawio`](docs/diagrams/aws-reference-architecture.drawio),
+editable online in
+[app.diagrams.net](https://app.diagrams.net/#HGauranshMathur%2FJDSG-Group6%2Fmain%2Fdocs%2Fdiagrams%2Faws-reference-architecture.drawio)
+straight from this repository, and a workflow re-renders the SVG on every push that changes
+it — see [CI/CD](docs/ci-cd.md).
+
 ## Tech stack
 
 | Layer | Choice | Notes |

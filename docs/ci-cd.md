@@ -1,6 +1,8 @@
 # CI/CD
 
-GitHub Actions, in two workflows.
+GitHub Actions, in three workflows: `ci.yml` gates pull requests, `release.yml` ships after
+merge, and `render-diagrams.yml` keeps the architecture diagram's rendered image in step
+with its source.
 
 ## `ci.yml` — pull requests only
 
@@ -113,6 +115,28 @@ runner, and paying the emulation cost on every pull request buys no extra signal
 
 **Image tagging:** every image carries an immutable `sha-<commit>` tag alongside the
 semantic version, so a deployment can always be pinned to an exact build.
+
+## `render-diagrams.yml` — the architecture diagram, rendered
+
+The architecture diagram is authored as draw.io XML
+([`docs/diagrams/aws-reference-architecture.drawio`](diagrams/aws-reference-architecture.drawio))
+and edited online in app.diagrams.net, which commits the `.drawio` straight back to `main`.
+GitHub cannot render draw.io files, so the README embeds an SVG — and an SVG exported by
+hand goes stale the first time someone edits the diagram and forgets to re-export.
+
+So the export is a workflow instead: any push to `main` that touches a `.drawio` under
+`docs/diagrams/` runs [`rlespinasse/drawio-export-action`](https://github.com/rlespinasse/drawio-export-action)
+(headless draw.io in a container), and if the rendered SVG differs from what is committed,
+the workflow commits it back as `github-actions[bot]`. The commit message carries
+`[skip ci]` so the render never triggers another workflow run, and pushes from the built-in
+`GITHUB_TOKEN` do not retrigger workflows anyway — no recursion by two independent
+mechanisms. A `workflow_dispatch` trigger allows forcing a render by hand, which is also
+how the first SVG gets created.
+
+This is the one workflow that pushes to `main` directly rather than going through a pull
+request. That is deliberate: the SVG is derived output, not authored work — reviewing it
+would mean reviewing a rendering, and requiring a pull request would mean a human in the
+loop for a file no human writes.
 
 ## Configuring SonarQube
 
