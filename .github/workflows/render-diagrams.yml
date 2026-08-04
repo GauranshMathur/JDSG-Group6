@@ -39,11 +39,13 @@ jobs:
           action-mode: all
 
       - name: Move rendered files next to their sources
+        # The export action runs in a container as root, so its output
+        # directory comes out root-owned and the runner user cannot move
+        # files out of it without sudo.
         run: |
-          for f in docs/diagrams/export/*.svg; do
-            mv "$f" "docs/diagrams/$(basename "$f")"
-          done
-          rm -rf docs/diagrams/export
+          sudo mv docs/diagrams/export/*.svg docs/diagrams/
+          sudo rm -rf docs/diagrams/export
+          sudo chown "$(id -u):$(id -g)" docs/diagrams/*.svg
 
       - name: Commit and push if changed
         run: |
