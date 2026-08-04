@@ -31,11 +31,12 @@ questions on this page.
 Milestone 3 ships no limit — a post can be rewritten a minute or a year after publication.
 
 **Why it matters:** it is the difference between fixing a typo and rewriting history, and it
-matters more once replies exist, because a reply can be made to agree with something that is
-then changed underneath it.
+matters more now that replies exist, because a reply can be made to agree with something that
+is then changed underneath it.
 
-**When:** with replies, which are now part of milestone 5. Needs answering before slice C
-(replies) ships.
+**When:** overdue. The original deadline was "before replies ship", and replies shipped in
+milestone 5 with no limit decided — every post remains editable forever. Needs answering
+before anything invites real usage.
 
 ### Should duplicate posts be prevented?
 
@@ -46,17 +47,6 @@ bad. But "duplicate" needs defining — the exact same text, or normalised for w
 case? Someone posting "good morning" every day is not spamming.
 
 **When:** not urgent. Worth deciding before anything invites real usage.
-
-### Should posts carry images?
-
-Formats, size ceiling, whether they are re-encoded and compressed on upload, what
-quality-to-size trade-off is acceptable, and whether thumbnails are generated separately from
-the original.
-
-**Why it matters:** this is the first requirement needing both object storage and background
-jobs, so it pulls two deferred decisions forward at once.
-
-**When:** before the media milestone. Not before that.
 
 ---
 

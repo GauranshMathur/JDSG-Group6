@@ -177,7 +177,7 @@ string cannot see CSS. So for any change that touches a request path or a view:
 
 ```bash
 cd web && bin/rails server                # then actually load the page
-script/smoke-test http://localhost:3000   # register, post, read back, sign out
+script/smoke-test http://localhost:3000   # register, post, upload an image, read back, sign out
 ```
 
 `script/smoke-test` is the same script CI runs, so a CI failure is reproducible in one
