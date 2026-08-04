@@ -10,15 +10,21 @@ stack is its faithful realization. Terraform is written against the AWS provider
 pointing at real AWS would be a provider/endpoint change, not a rewrite. Nothing real is
 ever billed; local clusters and emulators are free to create and destroy.
 
-The architecture diagram lives at
-[`diagrams/aws-reference-architecture.drawio`](diagrams/aws-reference-architecture.drawio)
-(draw.io, official AWS icon set). **Open it online, straight from this repository:**
+The architecture diagram (draw.io, official AWS icon set) shows the full enterprise
+deployment: the edge chain (Route 53, CloudFront, WAF, ACM), both load balancer types,
+ingress and egress paths, the Kubernetes objects inside the cluster, two availability
+zones, encryption and identity (KMS, IAM/IRSA), and the backup and DR-region story.
+
+![AWS reference architecture](diagrams/aws-reference-architecture.svg)
+
+The source of truth is
+[`diagrams/aws-reference-architecture.drawio`](diagrams/aws-reference-architecture.drawio).
+**Open it online, straight from this repository:**
 [edit in app.diagrams.net](https://app.diagrams.net/#HGauranshMathur%2FJDSG-Group6%2Fmain%2Fdocs%2Fdiagrams%2Faws-reference-architecture.drawio)
 — authorize GitHub when prompted and edits can be committed back to the repo from the
-editor. It shows the full enterprise deployment: the edge chain (Route 53, CloudFront, WAF,
-ACM), both load balancer types, ingress and egress paths, the Kubernetes objects inside the
-cluster, two availability zones, encryption and identity (KMS, IAM/IRSA), and the backup
-and DR-region story.
+editor. The SVG above is not exported by hand: the `render-diagrams` workflow re-renders
+it on every push to `main` that changes the `.drawio`, so the picture follows the source
+(see [`ci-cd.md`](ci-cd.md)).
 
 ## Toolchain
 
