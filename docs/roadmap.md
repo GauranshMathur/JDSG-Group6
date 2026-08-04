@@ -28,15 +28,17 @@ can proceed in parallel once the design is agreed.
 
 | # | Milestone | Status |
 | --- | --- | --- |
-| I-1a | Terraform skeleton, ECR repository, GitHub OIDC role | Design proposed — see [`infrastructure.md`](infrastructure.md) |
-| I-1b | VPC, subnets, security groups, RDS PostgreSQL + PostgreSQL CI job (N-6.7) | Design proposed |
-| I-1c | ECS/Fargate service, ALB, TLS | Design proposed — blocked on a domain name |
-| I-1d | S3 for Active Storage | Design proposed |
+| I-1a | Design + reference diagram + toolchain verified (can Terraform stand up the emulated EKS?) | In progress — design in [`infrastructure.md`](infrastructure.md) |
+| I-1b | Local platform: cluster via Terraform, ingress, PostgreSQL, S3-compatible storage | Planned |
+| I-1c | The app served on the platform, with the app changes it forces (Postgres, shared cache, S3 media) | Planned |
+| I-1d | Resiliency demonstrated: HPA, node scaling, drains, zone-loss rescheduling | Planned |
+| I-1e | Load testing, latency testing, and the improvement loop they feed | Planned |
 
-ElastiCache is no longer part of I-1: Redis arrives with Sidekiq, and nothing needs a
-background job yet. The proposed design, its costs, and what it deliberately leaves out are
-in [`infrastructure.md`](infrastructure.md); the questions only its owner can answer
-(account, region, budget, domain) are in [`open-questions.md`](open-questions.md).
+**The direction changed after the first proposal:** there will never be a real AWS account.
+The AWS architecture (EKS, ALB, Multi-AZ RDS, S3 — the full enterprise shape) is the
+*reference design*, and it is realized locally — Terraform against a local AWS emulator,
+k3s standing in for EKS. The design, the local mapping, and what it forces in the app are
+in [`infrastructure.md`](infrastructure.md). ElastiCache stays out until Sidekiq exists.
 
 Milestones 0 and 1 were built together, since a feed needs an app to live in.
 

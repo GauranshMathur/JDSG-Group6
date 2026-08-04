@@ -89,27 +89,34 @@ catch. The measurement harness is a separate, larger piece.
 
 ## Infrastructure
 
-The AWS design is proposed in [`infrastructure.md`](infrastructure.md). Two inputs it cannot
-supply for itself:
+The design is in [`infrastructure.md`](infrastructure.md): the enterprise AWS architecture
+as the reference, realized entirely locally. The earlier questions about an AWS account,
+budget and domain name are answered by the premise — there will never be a real account,
+so nothing bills and TLS terminates against a local hostname.
 
-### Which AWS account and region, and whose budget?
+### Is "floci" LocalStack — and is its EKS emulation available to us?
 
-The design lands at roughly $45/month, always on — the ALB and the never-scales-to-zero
-Fargate task are most of it.
+The discussion named the local deployment tool "floci"; everything described (Terraform
+applied locally, many managed services emulated, an EKS mode that runs k3s underneath)
+matches LocalStack and its `tflocal` wrapper, but the name has not been confirmed. And
+LocalStack's EKS emulation is a paid Pro feature — the free tier does not include it.
 
-**Why it matters:** Terraform needs an account to point at before step I-1a, and a proof of
-concept that quietly bills someone indefinitely is how POCs become incidents.
+**Why it matters:** this decides whether Terraform's EKS module is proven by `apply`
+(emulator available) or only by `plan` (fallback: plain k3d plus the same Kubernetes
+manifests). The Kubernetes-side work is identical either way, so nothing else blocks on it.
 
-**When:** before any Terraform is written. It is the first blocker in the sequencing.
+**When:** I-1a — verifying the toolchain is that step's whole job.
 
-### What domain name?
+### Shared cache: Solid Cache or Redis?
 
-The ACM certificate, the ALB listener and `RAILS_FORCE_SSL` all hang off a real hostname.
+The ranked-feed cache and rate limiter are per-process memory, which breaks at two replicas.
+Solid Cache rides on Postgres and adds no service; Redis is the conventional answer and will
+be wanted for Sidekiq eventually anyway.
 
-**Why it matters:** without one, step I-1c can only ship plain HTTP on an ALB DNS name, which
-re-opens N-3.11 in production rather than closing it.
+**Why it matters:** picking Solid Cache now and Redis later means doing the work twice;
+picking Redis now adds a service before anything needs it.
 
-**When:** before I-1c. Steps I-1a and I-1b do not need it.
+**When:** the moment the deployment scales past one replica — during I-1c or I-1d.
 
 ---
 
