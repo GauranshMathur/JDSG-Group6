@@ -33,6 +33,10 @@ jobs:
           format: svg
           output: export
           remove-page-suffix: true
+          # Export everything rather than diffing git history for changed
+          # files — "auto" needs a full clone, and the commit step below
+          # already no-ops when the rendered output is unchanged.
+          action-mode: all
 
       - name: Move rendered files next to their sources
         run: |
