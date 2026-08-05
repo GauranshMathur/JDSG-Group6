@@ -148,15 +148,37 @@ RSpec.describe "Profiles" do
       expect(user.reload.bio).to eq("First programmer.")
     end
 
-    # F-4.6 — the username is not in the permit list, so a crafted form field
-    # changes nothing.
-    it "ignores an attempt to smuggle in a username change" do
+    # F-4.6 / ADR 0007 — usernames are changeable but unique.
+    it "updates the signed-in user's username" do
       user = sign_in(create(:user, username: "ada"))
 
-      patch update_profile_path, params: { user: { username: "taken_over", display_name: "Ada" } }
+      patch update_profile_path, params: { user: { username: "ada_lovelace" } }
 
-      expect(response).to redirect_to(profile_path("ada"))
-      expect(user.reload.username).to eq("ada")
+      expect(response).to redirect_to(profile_path("ada_lovelace"))
+      expect(user.reload.username).to eq("ada_lovelace")
+    end
+
+    it "rejects a username already taken by another user" do
+      create(:user, username: "grace")
+      sign_in(create(:user, username: "ada"))
+
+      patch update_profile_path, params: { user: { username: "grace" } }
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include("already been taken")
+    end
+
+    # The rejected value must not leak into the application shell: the sidebar
+    # renders the signed-in identity, and showing the name that was refused
+    # makes it look as though the account is now someone else's.
+    it "still shows the signed-in user's own handle after a rejected rename" do
+      create(:user, username: "grace")
+      sign_in(create(:user, username: "ada"))
+
+      patch update_profile_path, params: { user: { username: "grace" } }
+
+      expect(response.body).to include(profile_path("ada"))
+      expect(response.body).not_to include(profile_path("grace"))
     end
 
     it "rejects a bio over the limit and re-renders the form" do

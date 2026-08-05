@@ -66,7 +66,7 @@ production-ready, and so the work is visible if it ever is deployed.
 | F-4.3 | A public profile page lists that user's posts, newest first | Met — `/@username`, same ordering and cursor pagination as the feed |
 | F-4.4 | A user can edit their own display name and bio | Met |
 | F-4.5 | A user cannot edit anyone else's profile | Met — the edit routes carry no id and act on the session's user, so a route to anyone else's profile does not exist |
-| F-4.6 | A username is fixed at registration — profile URLs never break, and a released name can never be claimed | Met — `attr_readonly` raises on assignment, and only registration's permit list includes it. [ADR 0006](docs/adr/0006-immutable-usernames.md) |
+| F-4.6 | A username is unique and changeable — a name already held is refused with "has already been taken" | Met — editable on the profile page; one indexed exact-match lookup, with the unique index as the backstop. [ADR 0007](docs/adr/0007-changeable-usernames.md) supersedes [0006](docs/adr/0006-immutable-usernames.md) |
 
 ### 1.5 Engagement and hashtags (milestone 5)
 

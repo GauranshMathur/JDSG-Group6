@@ -178,6 +178,67 @@ grep -q "Set by the smoke test." /tmp/smoke-profile-after \
   || fail "the bio is not on the profile after saving it" /tmp/smoke-profile-after
 pass "display name and bio can be edited and are publicly visible"
 
+# --- Renaming, and uniqueness (F-4.6, ADR 0007) -------------------------------
+
+# A second account, only so there is a username already held to collide with.
+OTHER_COOKIES="$(mktemp)"
+trap 'rm -f "$COOKIES" "$OTHER_COOKIES"' EXIT
+OTHER_USERNAME="o$(date +%s)$RANDOM"
+
+curl -sS -c "$OTHER_COOKIES" "$BASE/registration/new" -o /tmp/smoke-other-signup
+other_token=$(token_from /tmp/smoke-other-signup)
+other_status=$(curl -sS -b "$OTHER_COOKIES" -c "$OTHER_COOKIES" -o /tmp/smoke-other-register \
+  -w '%{http_code}' -X POST "$BASE/registration" \
+  --data-urlencode "authenticity_token=$other_token" \
+  --data-urlencode "user[username]=$OTHER_USERNAME" \
+  --data-urlencode "user[email_address]=other-$EMAIL" \
+  --data-urlencode "user[password]=$PASSWORD" \
+  --data-urlencode "user[password_confirmation]=$PASSWORD")
+[ "$other_status" != "302" ] && fail "registering the second account returned HTTP $other_status" /tmp/smoke-other-register
+
+# Renaming onto a name someone already holds is refused, and says so.
+curl -sS -b "$COOKIES" -c "$COOKIES" "$BASE/profile/edit" -o /tmp/smoke-rename-edit
+rename_token=$(token_from /tmp/smoke-rename-edit)
+grep -q 'name="user\[username\]"' /tmp/smoke-rename-edit \
+  || fail "the profile edit form has no username field" /tmp/smoke-rename-edit
+
+taken_status=$(curl -sS -b "$COOKIES" -c "$COOKIES" -o /tmp/smoke-rename-taken \
+  -w '%{http_code}' -X POST "$BASE/profile" \
+  -H 'Accept: text/html' \
+  --data-urlencode "authenticity_token=$rename_token" \
+  --data-urlencode "_method=patch" \
+  --data-urlencode "user[username]=$OTHER_USERNAME")
+[ "$taken_status" != "422" ] \
+  && fail "renaming onto a taken username returned HTTP $taken_status, expected 422" /tmp/smoke-rename-taken
+grep -q "has already been taken" /tmp/smoke-rename-taken \
+  || fail "renaming onto a taken username did not say it was taken" /tmp/smoke-rename-taken
+pass "a username already held is refused with 'has already been taken'"
+
+# A free name is accepted, and the profile moves to the new handle.
+OLD_USERNAME="$USERNAME"
+NEW_USERNAME="r$(date +%s)$RANDOM"
+rename_status=$(curl -sS -b "$COOKIES" -c "$COOKIES" -o /tmp/smoke-rename \
+  -w '%{http_code}' -X POST "$BASE/profile" \
+  -H 'Accept: text/html' \
+  --data-urlencode "authenticity_token=$rename_token" \
+  --data-urlencode "_method=patch" \
+  --data-urlencode "user[username]=$NEW_USERNAME")
+[ "$rename_status" != "302" ] && fail "renaming returned HTTP $rename_status, expected 302" /tmp/smoke-rename
+
+new_status=$(curl -sS -o /tmp/smoke-renamed -w '%{http_code}' "$BASE/@$NEW_USERNAME")
+[ "$new_status" != "200" ] && fail "the profile at the new username returned HTTP $new_status" /tmp/smoke-renamed
+grep -q "$MARKER" /tmp/smoke-renamed \
+  || fail "the renamed profile does not list the account's post" /tmp/smoke-renamed
+
+# ADR 0007 accepts this: there is no redirect table, so the old handle is gone.
+old_status=$(curl -sS -o /dev/null -w '%{http_code}' "$BASE/@$OLD_USERNAME")
+[ "$old_status" != "404" ] \
+  && fail "the old username returned HTTP $old_status, expected 404 (no redirect table — ADR 0007)"
+pass "a username can be changed; the new handle serves the profile and the old one 404s"
+
+# Everything after this point addresses the account by its current handle.
+USERNAME="$NEW_USERNAME"
+
 # --- Editing and deleting your own post (F-3.2, F-3.3) ------------------------
 
 post_id=$(grep -oE 'id="post_[0-9]+"' /tmp/smoke-post | head -1 | grep -oE '[0-9]+')

@@ -177,10 +177,12 @@ The original plan, unchanged:
   digits and underscores, 3–20 characters. Uniqueness works the way email already does
   (F-2.2): normalised to lower case on write, enforced by a plain unique index, nothing
   adapter-specific.
-- **Usernames are chosen at registration and never change** —
-  [ADR 0006](adr/0006-immutable-usernames.md). This is what makes `/@username` a stable URL,
-  and it keeps uniqueness down to one indexed column: were names releasable, a candidate
+- **Usernames were chosen at registration and never changed** —
+  [ADR 0006](adr/0006-immutable-usernames.md). This is what made `/@username` a stable URL,
+  and it kept uniqueness down to one indexed column: were names releasable, a candidate
   would have to be checked against every name ever held, not just the current ones.
+  **Since superseded by [ADR 0007](adr/0007-changeable-usernames.md)** — renames are allowed
+  from the profile page, and the URL stability that reasoning bought was given up with it.
 - Existing users are backfilled from the local part of their email address, deduplicated
   with a numeric suffix. Same licence as milestone 3's backfill: acceptable precisely
   because this is development data — inventing usernames for real accounts would not be.

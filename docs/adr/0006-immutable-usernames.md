@@ -1,6 +1,6 @@
 # ADR 0006 — Usernames are chosen at registration and never change
 
-**Status:** Accepted
+**Status:** Superseded by [ADR 0007](0007-changeable-usernames.md)
 **Date:** 2026-07-29
 **Milestone:** 4
 
