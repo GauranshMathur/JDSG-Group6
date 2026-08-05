@@ -30,7 +30,7 @@ Where things are written down:
 
 **Current state: milestones 1–7 done (including 5.5 and 6.5).** The Rails app exists in
 `web/`, the feed works, and accounts exist — register, sign in, sign out, reset. Posts belong
-to their authors, who can edit and delete their own. Every account has an immutable username,
+to their authors, who can edit and delete their own. Every account has a unique, changeable username,
 a public `/@username` profile page, and an editable display name, bio, and avatar; a sidebar
 is the application shell. Engagement is complete: likes, reposts, replies (with a post detail
 page), and hashtags (parsed, linked, with tag pages). The feed is ranked by engagement and
