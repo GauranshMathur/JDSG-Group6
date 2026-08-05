@@ -1,0 +1,12 @@
+<%# Inline single-path glyphs, one per nav item. Inline rather than image_tag
+    so they inherit currentColor and follow the link's own colour and hover
+    state; there is no icon font or sprite sheet to add for four shapes. %>
+<% paths = {
+     "feed"    => "M12 3 2 12h3v8h6v-5h2v5h6v-8h3L12 3z",
+     "search"  => "M10 2a8 8 0 1 0 4.9 14.32l5.39 5.39 1.42-1.42-5.39-5.39A8 8 0 0 0 10 2zm0 2a6 6 0 1 1 0 12 6 6 0 0 1 0-12z",
+     "profile" => "M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm0 2c-5.33 0-8 2.67-8 5v3h16v-3c0-2.33-2.67-5-8-5z",
+     "signout" => "M10 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h5v-2H5V5h5V3zm6.09 3.5L14.67 7.9 16.76 10H9v2h7.76l-2.09 2.09 1.42 1.42L21 11l-4.91-4.5z"
+   } %>
+<svg class="sidebar__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+  <path fill="currentColor" d="<%= paths.fetch(name) %>" />
+</svg>

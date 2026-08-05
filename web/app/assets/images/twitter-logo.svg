@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The bird mark used as this clone's logo and favicon. The shape is the
+     Twitter bird, which is a trademark of X Corp; this is a proof of concept
+     that is never deployed and never published, so it stands in for a logo
+     rather than claiming one. A real product would need its own mark. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 209" role="img" aria-label="Twitter Clone">
+  <path fill="#1d9bf0" d="M256 25.45a105 105 0 0 1-30.166 8.27c10.845-6.5 19.172-16.793 23.093-29.057a105.183 105.183 0 0 1-33.351 12.745C205.995 6.786 192.346.5 177.254.5c-28.972 0-52.464 23.491-52.464 52.46 0 4.111.464 8.114 1.36 11.954-43.605-2.188-82.262-23.075-108.144-54.818a52.234 52.234 0 0 0-7.103 26.38c0 18.203 9.266 34.26 23.343 43.668A52.253 52.253 0 0 1 10.53 73.74v.665c0 25.417 18.08 46.618 42.079 51.431a52.508 52.508 0 0 1-23.717.9c6.687 20.842 26.06 36.008 49.023 36.432-17.966 14.079-40.594 22.468-65.181 22.468-4.235 0-8.412-.249-12.518-.734 23.223 14.889 50.796 23.577 80.42 23.577 96.5 0 149.269-79.933 149.269-149.264 0-2.273-.052-4.535-.153-6.786A106.554 106.554 0 0 0 256 25.45"/>
+</svg>

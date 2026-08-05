@@ -463,11 +463,82 @@ body {
   align-self: flex-start;
 }
 
+.sidebar__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
 .sidebar__brand {
-  font-weight: 700;
-  font-size: 1.125rem;
+  display: inline-flex;
+  align-items: center;
   color: var(--colour-text);
   text-decoration: none;
+  border-radius: 999px;
+  padding: 0.25rem;
+}
+
+.sidebar__brand:hover {
+  background: var(--colour-accent-soft, rgba(29, 155, 240, 0.1));
+}
+
+.sidebar__logo {
+  display: block;
+  width: 2rem;
+  height: 2rem;
+}
+
+/* The toggle's text label is for screen readers; sighted users get the glyph.
+   Not `display: none`, which would take it out of the accessibility tree too. */
+.sidebar__toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--colour-muted);
+  cursor: pointer;
+}
+
+.sidebar__toggle:hover {
+  background: var(--colour-accent-soft, rgba(29, 155, 240, 0.1));
+  color: var(--colour-accent);
+}
+
+.sidebar__toggle-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.sidebar__toggle-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.sidebar__body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  flex: 1;
+  min-height: 0;
+}
+
+.sidebar__icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
 }
 
 .sidebar__nav {
@@ -499,12 +570,15 @@ body {
 }
 
 .sidebar__link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
   color: var(--colour-accent);
   text-decoration: none;
   font-weight: 600;
 }
 
-.sidebar__link:hover {
+.sidebar__link:hover .sidebar__label {
   text-decoration: underline;
 }
 
@@ -526,8 +600,36 @@ body {
   cursor: pointer;
 }
 
-.sidebar__link--button:hover {
+.sidebar__link--button:hover .sidebar__label {
   text-decoration: underline;
+}
+
+/* Collapsed: the rail keeps the logo, the toggle and the icons, and drops
+   everything that needs width. The class is on <html> so it applies before
+   Stimulus connects — see the inline script in the layout. */
+.sidebar-is-collapsed .sidebar {
+  width: 4rem;
+  align-items: center;
+}
+
+.sidebar-is-collapsed .sidebar__header {
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.sidebar-is-collapsed .sidebar__label,
+.sidebar-is-collapsed .sidebar__user {
+  display: none;
+}
+
+.sidebar-is-collapsed .sidebar__link {
+  justify-content: center;
+}
+
+/* The rail is too narrow to read a handle in, so the account block becomes the
+   sign-out icon alone. */
+.sidebar-is-collapsed .sidebar__account {
+  align-items: center;
 }
 
 @media (max-width: 40rem) {
@@ -563,6 +665,37 @@ body {
      alone says who you are. */
   .sidebar__user-name {
     display: none;
+  }
+
+  .sidebar__body {
+    flex: 1;
+    flex-direction: row;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  /* Collapsing is a desktop affordance. The top bar is already the compact
+     form, so the toggle goes away and the collapsed rules are undone rather
+     than leaving a rail lying across the top of the page. */
+  .sidebar__toggle {
+    display: none;
+  }
+
+  .sidebar-is-collapsed .sidebar {
+    width: 100%;
+    align-items: center;
+  }
+
+  .sidebar-is-collapsed .sidebar__header {
+    flex-direction: row;
+  }
+
+  .sidebar-is-collapsed .sidebar__label {
+    display: inline;
+  }
+
+  .sidebar-is-collapsed .sidebar__user {
+    display: flex;
   }
 }
 
