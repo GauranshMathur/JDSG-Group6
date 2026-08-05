@@ -1,28 +1,75 @@
 # CI/CD
 
-GitHub Actions, in three workflows: `ci.yml` gates pull requests, `release.yml` ships after
-merge, and `render-diagrams.yml` keeps the architecture diagram's rendered image in step
-with its source.
+GitHub Actions. `release.yml` ships after merge and `render-diagrams.yml` keeps the
+architecture diagram's rendered image in step with its source. Pull requests go through a
+**parent pipeline that calls child pipelines** — `ci.yml` decides what a change needs, and
+`ci-app.yml`, `ci-infra.yml` and `ci-security.yml` do the work.
 
-## `ci.yml` — pull requests only
+## The pipelines
 
-A **Detect changes** job runs first and classifies the pull request. If nothing outside
-documentation changed — only `*.md`, `docs/**` or `LICENSE` — then lint, the specs, the
-container build and SonarQube are all skipped. A documentation change cannot break RuboCop or
-stop the image booting, so building and scanning one costs minutes to learn nothing.
+GitHub has no parent/child pipelines as such. The equivalent is a **reusable workflow**:
+`on: workflow_call` in the child, `uses: ./.github/workflows/child.yml` in the parent. It
+behaves like GitLab's `trigger` with `strategy: depend` — the calling job waits for the child
+and can read its outputs.
 
-Two deliberate details:
+| Workflow | Runs | Contains |
+| --- | --- | --- |
+| `ci.yml` | Every pull request | Routing and the aggregate gate. No checks of its own |
+| `ci-app.yml` | `[APP]` | Lint, Test, Container build + image scan + DAST, SonarQube |
+| `ci-infra.yml` | `[INFRA]` | Compose validation, Trivy misconfiguration scan over `infra/`. Terraform `fmt`/`validate`/`apply` arrive with the Terraform in I-1b |
+| `ci-security.yml` | Always | Brakeman, bundler-audit, Trivy filesystem scan |
 
-- **The SAST job still runs.** Its Ruby-specific analysis is skipped, but the Trivy scan is
-  not: it also looks for committed secrets, and a credential pasted into a markdown file is
-  every bit as leaked as one in a Ruby file.
-- **The filtering is per job, not `paths-ignore` on the trigger.** This matters once `main`
-  has required status checks. A workflow skipped by `paths-ignore` never reports its checks
-  at all, so the pull request waits forever for a result that will never arrive. A job
-  skipped by an `if` reports a `skipped` conclusion, which satisfies the requirement.
+**Routing is by a tag in the pull request title** — `[APP]`, `[INFRA]` or `[DOC]`. More than
+one may appear, and `[APP][INFRA]` runs both. Matching is case-insensitive, and `[DOCS]` is
+accepted alongside `[DOC]`.
 
-Anything that is not documentation counts as code. Deciding it that way round means a file
-type nobody anticipated is treated as code and gets checked, rather than slipping through.
+An untitled-by-tag pull request **runs everything**, with a warning. Failing open on coverage
+is the safe direction: a change nobody routed should be over-checked rather than waved
+through.
+
+Three things this design has to get right:
+
+- **The title is a claim; a diff is evidence.** A pull request titled `[DOC]` that edits
+  `web/` will skip the specs and the container build. This is the accepted cost of declaring
+  the pipeline instead of deriving it from changed paths, and the reason routing fails open
+  when no tag is present.
+- **The title is attacker-controlled.** Anyone who can open a pull request chooses it, so it
+  reaches the routing script through an environment variable rather than `${{ }}`
+  interpolation, which would be a shell injection.
+- **The trigger includes `edited`.** Without it, a pull request opened as `[DOC]` and
+  retitled to `[APP]` would keep the checks it got the first time.
+
+**The security pipeline is never routed around.** Its Ruby-specific analysis is gated on
+`[APP]`, because Brakeman has nothing to say about a Terraform change, but the Trivy scan is
+not: it looks for committed secrets, and a credential pasted into a markdown file is every
+bit as leaked as one in a Ruby file. Running it unconditionally is also what makes the
+`Trivy` code-scanning check appear on every pull request.
+
+### One required check, not seven
+
+`ci.yml` ends with a **`CI`** job that always runs, `needs` every child, and fails if any of
+them came back `failure` or `cancelled`. **That is the check to require on `main`** — not the
+children.
+
+This is not tidiness. A reusable workflow that is never called contributes *no check runs at
+all*, which is the same trap `paths-ignore` sets: requiring `App / Lint` would leave every
+`[INFRA]` pull request waiting forever for a status that is never coming. It is the failure
+the `Trivy` check used to show on documentation-only pull requests, one layer up.
+
+An always-running aggregate job reports on every pull request by construction, so it can be
+required without deadlocking anything.
+
+### The routing tag and the release
+
+With squash merging the pull request title becomes the commit subject, and
+`next-version.sh` anchors every Conventional Commit pattern at `^`. So
+`[INFRA] feat(terraform): …` matched nothing, `bump=none`, and the release was silently
+skipped — no tag, no image, exit code 0.
+
+The script now strips leading `[TAG]` markers before classifying, with regression tests
+covering single tags, stacked tags, and tagged commits that must *not* release. As ever with
+this script, the tests were checked against the unfixed version first: five of the seven
+failed, which is the only evidence that they test anything.
 
 
 All work reaches the default branch through a pull request, and a pull request merges only

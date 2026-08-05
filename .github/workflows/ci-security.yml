@@ -1,0 +1,107 @@
+name: Security pipeline
+
+# Called by ci.yml on every pull request, whatever the title says. Routing may
+# decide which build runs; it does not get to decide whether the tree is scanned
+# for secrets.
+#
+# The Ruby-specific analysis is the part that varies: Brakeman and bundler-audit
+# have nothing to say about a Terraform change, so the caller passes `ruby` to
+# turn them off.
+on:
+  workflow_call:
+    inputs:
+      ruby:
+        description: Run the Ruby-specific analysis (Brakeman, bundler-audit).
+        type: boolean
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  sast:
+    name: SAST
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ruby/setup-ruby@v1
+        if: inputs.ruby
+        with:
+          working-directory: web
+          bundler-cache: true
+
+      # Rails-aware static analysis: SQL injection, mass assignment, unsafe
+      # redirects, XSS.
+      - name: Brakeman
+        if: inputs.ruby
+        working-directory: web
+        run: bundle exec brakeman --no-pager --format plain
+
+      # Known CVEs in the locked gem versions.
+      - name: Bundler Audit
+        if: inputs.ruby
+        working-directory: web
+        run: |
+          bundle exec bundler-audit update
+          bundle exec bundler-audit check
+
+      # Dependency and secret scanning over the source tree. These are findings
+      # in code we control, so any HIGH or CRITICAL fails the build.
+      #
+      # web/vendor is skipped because setup-ruby installs gems there at CI time,
+      # and scanning it reports on the *internals of third-party gems* — puma's
+      # own tools/Dockerfile, the railties devcontainer template, lint_roller's
+      # development Gemfile.lock. None of that is our code or reaches our image:
+      # vendor/bundle is not in git, so the Docker build never copies it.
+      #
+      # This does not weaken dependency scanning. Our actual dependencies are
+      # covered twice over — bundler-audit runs against web/Gemfile.lock above,
+      # and Trivy still picks that same lockfile up here.
+      - name: Trivy filesystem scan
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,secret,misconfig
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          skip-dirs: web/vendor
+          exit-code: "1"
+
+      # The gating scan above only sets an exit code — its findings went nowhere.
+      # This second pass reports every severity into the Security tab, the same
+      # split the image scan uses: one scan decides pass or fail, the other is
+      # the record.
+      #
+      # always(), so a failing gate publishes what it found rather than hiding
+      # it. A scan that fails the build without saying why is the least useful
+      # of the two halves.
+      - name: Trivy filesystem scan (report all severities)
+        if: always()
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,secret,misconfig
+          format: sarif
+          output: trivy-fs.sarif
+          ignore-unfixed: true
+          skip-dirs: web/vendor
+          exit-code: "0"
+
+      # This pipeline is never routed around, so uploading here is also what
+      # makes the code-scanning check report on *every* pull request. Before
+      # this, the only upload was in the container job, which a documentation
+      # pull request skips — so the "Trivy" check was never created, and GitHub
+      # left it listed as expected and waiting for a status that was never
+      # coming.
+      - name: Upload filesystem scan results
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-fs.sarif
+          category: trivy-fs

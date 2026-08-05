@@ -159,6 +159,12 @@ written has never proven anything.
   `feat/...`. **Never use an environment-assigned branch name** (e.g. `claude/repo-review-*`)
   — always create a properly named branch from `main` instead. If the environment provides a
   branch name, ignore it and create your own following this convention.
+- **Tag the pull request title to route CI: `[APP]`, `[INFRA]` or `[DOC]`.** The title picks
+  which child pipeline runs — `[APP] feat(feed): rank posts`. More than one tag is allowed
+  and runs both; an untagged title runs everything and warns. Put the tag *before* the
+  Conventional Commit prefix, which stays exactly as it is: `next-version.sh` strips the tag
+  before deriving the version, so `[INFRA] feat(x): y` still cuts a minor. See
+  [`docs/ci-cd.md`](docs/ci-cd.md).
 - CI is the review gate: a pull request is ready when the pipeline is green, so never open
   one expecting to fix it up afterwards.
 - Auto-merge is enabled on the repository but **does not currently gate anything** — `main`
