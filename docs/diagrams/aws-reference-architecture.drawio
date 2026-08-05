@@ -1,6 +1,6 @@
 <mxfile host="app.diagrams.net" agent="claude">
   <diagram id="aws-reference" name="AWS reference architecture">
-    <mxGraphModel dx="1389" dy="726" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2400" pageHeight="1600" math="0" shadow="0">
+    <mxGraphModel dx="1597" dy="835" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2400" pageHeight="1600" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -170,8 +170,14 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="e_nlb" edge="1" parent="1" source="nlb" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#8C4FFF;fontSize=9;dashed=1;" target="ingctrl" value="L4 path">
-          <mxGeometry relative="1" as="geometry" />
+        <mxCell id="e_nlb" edge="1" parent="1" source="nlb" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#8C4FFF;fontSize=9;dashed=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="ingctrl" value="L4 path">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="500" y="463" />
+              <mxPoint x="500" y="620" />
+              <mxPoint x="465" y="620" />
+            </Array>
+          </mxGeometry>
         </mxCell>
         <mxCell id="e_svc_pod1" edge="1" parent="1" source="k8ssvc" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#326CE5;fontSize=10;" target="podA1">
           <mxGeometry relative="1" as="geometry">
@@ -233,9 +239,10 @@
         <mxCell id="e_kms_rds" edge="1" parent="1" source="kms" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#DD344C;fontSize=9;dashed=1;" target="rds1" value="at-rest encryption">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="470.04" y="562.48" />
-              <mxPoint x="560.04" y="562.48" />
-              <mxPoint x="560.04" y="990.04" />
+              <mxPoint x="510" y="135" />
+              <mxPoint x="510" y="562.5" />
+              <mxPoint x="560" y="562.5" />
+              <mxPoint x="560" y="990" />
             </Array>
           </mxGeometry>
         </mxCell>
@@ -274,21 +281,16 @@
         <mxCell id="I5TFVlsETnQBlKOXwHH2-3" edge="1" parent="1" source="gha" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#232F3E;fontSize=10;" target="I5TFVlsETnQBlKOXwHH2-2" value="">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="125" y="1260.04" />
-              <mxPoint x="620.04" y="1260.04" />
+              <mxPoint x="125" y="1260" />
+              <mxPoint x="540" y="1260" />
+              <mxPoint x="540" y="1180" />
             </Array>
             <mxPoint x="200" y="1190" as="sourcePoint" />
             <mxPoint x="580" y="1180.047619047619" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="I5TFVlsETnQBlKOXwHH2-2" parent="1" style="sketch=0;points=[[0,0,0],[0.25,0,0],[0.5,0,0],[0.75,0,0],[1,0,0],[0,1,0],[0.25,1,0],[0.5,1,0],[0.75,1,0],[1,1,0],[0,0.25,0],[0,0.5,0],[0,0.75,0],[1,0.25,0],[1,0.5,0],[1,0.75,0]];outlineConnect=0;fontColor=#232F3E;fillColor=#ED7100;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.ecr;" value="ECR" vertex="1">
-          <mxGeometry height="60" width="60" x="590" y="1150" as="geometry" />
-        </mxCell>
         <mxCell id="nlb" parent="1" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;fillColor=#8C4FFF;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=10;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.network_load_balancer;" value="NLB (L4 — TLS passthrough;&#xa;fronts Traefik locally)" vertex="1">
           <mxGeometry height="56" width="56" x="560" y="435" as="geometry" />
-        </mxCell>
-        <mxCell id="nat1" parent="1" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=#ffffff;fillColor=#8C4FFF;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=10;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.nat_gateway;" value="NAT gateway" vertex="1">
-          <mxGeometry height="52" width="52" x="730" y="435" as="geometry" />
         </mxCell>
         <mxCell id="drnote" parent="1" style="text;html=1;align=left;verticalAlign=top;fontSize=11;fontColor=#232F3E;whiteSpace=wrap;" value="Pilot light: no compute runs here. Recovery = Terraform apply into this region, restore RDS from the copied snapshots, point Active Storage at the replica bucket, and Route 53 health-check failover flips DNS. RTO is the apply + restore time; RPO is the snapshot/replication lag." vertex="1">
           <mxGeometry height="120" width="480" x="1800" y="480" as="geometry" />
@@ -325,6 +327,12 @@
         <mxCell id="rds2" parent="1" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=#ffffff;fillColor=#527FFF;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=10;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.rds;" value="RDS PostgreSQL — standby&#xa;(Multi-AZ)" vertex="1">
           <mxGeometry height="60" width="60" x="1110" y="960" as="geometry" />
         </mxCell>
+        <mxCell id="waf" parent="1" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=#ffffff;fillColor=#DD344C;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=10;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.waf;" value="WAF&#xa;(managed rules)" vertex="1">
+          <mxGeometry height="60" width="60" x="1050" y="105" as="geometry" />
+        </mxCell>
+        <mxCell id="cf" parent="1" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=#ffffff;fillColor=#8C4FFF;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=10;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.cloudfront;" value="CloudFront&#xa;(CDN)" vertex="1">
+          <mxGeometry height="60" width="60" x="900" y="105" as="geometry" />
+        </mxCell>
         <mxCell id="e_repl" edge="1" parent="1" source="rds1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#527FFF;fontSize=10;dashed=1;" target="rds2" value="synchronous replication">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
@@ -337,11 +345,11 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="waf" parent="1" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=#ffffff;fillColor=#DD344C;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=10;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.waf;" value="WAF&#xa;(managed rules)" vertex="1">
-          <mxGeometry height="60" width="60" x="1050" y="105" as="geometry" />
+        <mxCell id="I5TFVlsETnQBlKOXwHH2-2" parent="1" style="sketch=0;points=[[0,0,0],[0.25,0,0],[0.5,0,0],[0.75,0,0],[1,0,0],[0,1,0],[0.25,1,0],[0.5,1,0],[0.75,1,0],[1,1,0],[0,0.25,0],[0,0.5,0],[0,0.75,0],[1,0.25,0],[1,0.5,0],[1,0.75,0]];outlineConnect=0;fontColor=#232F3E;fillColor=#ED7100;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.ecr;" value="ECR" vertex="1">
+          <mxGeometry height="60" width="60" x="590" y="1150" as="geometry" />
         </mxCell>
-        <mxCell id="cf" parent="1" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=#ffffff;fillColor=#8C4FFF;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=10;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.cloudfront;" value="CloudFront&#xa;(CDN)" vertex="1">
-          <mxGeometry height="60" width="60" x="900" y="105" as="geometry" />
+        <mxCell id="nat1" parent="1" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=#ffffff;fillColor=#8C4FFF;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=10;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.nat_gateway;" value="NAT gateway" vertex="1">
+          <mxGeometry height="52" width="52" x="730" y="435" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
