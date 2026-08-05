@@ -14,13 +14,25 @@
     <%# Enable PWA manifest for installable apps (make sure to enable in config/routes.rb too!) %>
     <%#= tag.link rel: "manifest", href: pwa_manifest_path(format: :json) %>
 
+    <link rel="icon" href="<%= asset_path("twitter-logo.svg") %>" type="image/svg+xml">
     <link rel="icon" href="/icon.png" type="image/png">
-    <link rel="icon" href="/icon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="/icon.png">
 
     <%# Includes all stylesheet files in app/assets/stylesheets %>
     <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
     <%= javascript_importmap_tags %>
+
+    <%# Applies the remembered sidebar state before first paint. Stimulus
+        connects after the body renders, which is late enough to show the rail
+        open for a frame and then snap it shut. Deliberately inline and
+        unbundled so it runs synchronously in <head>. %>
+    <script>
+      try {
+        if (window.localStorage.getItem("sidebar-collapsed") === "1") {
+          document.documentElement.classList.add("sidebar-is-collapsed")
+        }
+      } catch (error) { /* storage blocked — the sidebar just starts open */ }
+    </script>
   </head>
 
   <body>

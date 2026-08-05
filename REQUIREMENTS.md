@@ -67,6 +67,9 @@ production-ready, and so the work is visible if it ever is deployed.
 | F-4.4 | A user can edit their own display name and bio | Met |
 | F-4.5 | A user cannot edit anyone else's profile | Met — the edit routes carry no id and act on the session's user, so a route to anyone else's profile does not exist |
 | F-4.6 | A username is unique and changeable — a name already held is refused with "has already been taken" | Met — editable on the profile page; one indexed exact-match lookup, with the unique index as the backstop. [ADR 0007](docs/adr/0007-changeable-usernames.md) supersedes [0006](docs/adr/0006-immutable-usernames.md) |
+| F-4.7 | The logo appears on every page and returns to the feed | Met — the sidebar brand is the logo, linking to `/` |
+| F-4.8 | The sidebar collapses to an icon rail, and the choice is remembered | Met — a Stimulus toggle writing to `localStorage`; the class is applied in `<head>` so the rail does not flash open on load. Desktop only — the narrow-screen top bar is already the compact form |
+| F-4.9 | The browser tab carries the app's mark, not the generator's placeholder | Met — the logo SVG is the favicon; `public/icon.png` is rasterized from it for `apple-touch-icon` |
 
 ### 1.5 Engagement and hashtags (milestone 5)
 

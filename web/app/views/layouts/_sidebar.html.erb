@@ -1,25 +1,67 @@
-<%# The application shell (F-4.1, F-6.1). %>
-<aside class="sidebar">
-  <%= link_to "Twitter Clone", root_path, class: "sidebar__brand" %>
-
-  <nav class="sidebar__nav">
-    <%= link_to "Feed", root_path, class: "sidebar__link" %>
-    <%= link_to "Search", search_path, class: "sidebar__link" %>
-    <% if authenticated? %>
-      <%= link_to "Profile", profile_path(Current.user.username), class: "sidebar__link" %>
+<%# The application shell (F-4.1, F-6.1). The logo is the way home (F-4.7) and
+    the rail collapses to icons (F-4.8) — see sidebar_controller.js. %>
+<aside class="sidebar" data-controller="sidebar">
+  <div class="sidebar__header">
+    <%= link_to root_path, class: "sidebar__brand", title: "Twitter Clone" do %>
+      <%= image_tag "twitter-logo.svg", class: "sidebar__logo",
+            alt: "Twitter Clone — go to the feed" %>
     <% end %>
-  </nav>
 
-  <div class="sidebar__account">
-    <% if authenticated? %>
-      <p class="sidebar__user">
-        <span class="sidebar__user-name"><%= Current.user.name %></span>
-        <span class="sidebar__user-handle">@<%= Current.user.username %></span>
-      </p>
-      <%= button_to "Sign out", session_path, method: :delete, class: "sidebar__link sidebar__link--button" %>
-    <% else %>
-      <%= link_to "Sign in", new_session_path, class: "sidebar__link" %>
-      <%= link_to "Sign up", new_registration_path, class: "sidebar__link" %>
-    <% end %>
+    <%# aria-expanded is rendered expanded and corrected by the controller on
+        connect: the collapsed state lives in localStorage, which the server
+        cannot see, so the honest server-rendered default is the open one. %>
+    <button type="button"
+            class="sidebar__toggle"
+            data-action="sidebar#toggle"
+            data-sidebar-target="toggle"
+            aria-controls="sidebar-nav"
+            aria-expanded="true">
+      <span class="sidebar__toggle-label">Collapse the sidebar</span>
+      <svg class="sidebar__toggle-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path fill="currentColor" d="M4 5h16v2H4V5zm0 6h16v2H4v-2zm0 6h16v2H4v-2z" />
+      </svg>
+    </button>
+  </div>
+
+  <div id="sidebar-nav" class="sidebar__body">
+    <nav class="sidebar__nav">
+      <%= link_to root_path, class: "sidebar__link", title: "Feed" do %>
+        <%= render "layouts/sidebar_icon", name: "feed" %>
+        <span class="sidebar__label">Feed</span>
+      <% end %>
+      <%= link_to search_path, class: "sidebar__link", title: "Search" do %>
+        <%= render "layouts/sidebar_icon", name: "search" %>
+        <span class="sidebar__label">Search</span>
+      <% end %>
+      <% if authenticated? %>
+        <%= link_to profile_path(Current.user.username), class: "sidebar__link", title: "Profile" do %>
+          <%= render "layouts/sidebar_icon", name: "profile" %>
+          <span class="sidebar__label">Profile</span>
+        <% end %>
+      <% end %>
+    </nav>
+
+    <div class="sidebar__account">
+      <% if authenticated? %>
+        <p class="sidebar__user">
+          <span class="sidebar__user-name"><%= Current.user.name %></span>
+          <span class="sidebar__user-handle">@<%= Current.user.username %></span>
+        </p>
+        <%= button_to session_path, method: :delete,
+              class: "sidebar__link sidebar__link--button", title: "Sign out" do %>
+          <%= render "layouts/sidebar_icon", name: "signout" %>
+          <span class="sidebar__label">Sign out</span>
+        <% end %>
+      <% else %>
+        <%= link_to new_session_path, class: "sidebar__link", title: "Sign in" do %>
+          <%= render "layouts/sidebar_icon", name: "profile" %>
+          <span class="sidebar__label">Sign in</span>
+        <% end %>
+        <%= link_to new_registration_path, class: "sidebar__link", title: "Sign up" do %>
+          <%= render "layouts/sidebar_icon", name: "signout" %>
+          <span class="sidebar__label">Sign up</span>
+        <% end %>
+      <% end %>
+    </div>
   </div>
 </aside>
