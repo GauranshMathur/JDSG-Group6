@@ -1,21 +1,11 @@
 name: CI
 
-# The parent pipeline. It decides *which* pipeline a pull request needs and
-# calls it; it runs no checks of its own.
+# The parent pipeline. It decides which child pipelines a pull request needs and
+# calls them; it runs no checks of its own.
 #
-# GitHub has no parent/child pipelines as such. The equivalent is a reusable
-# workflow — `on: workflow_call` in the child, `uses:` in the parent — which
-# behaves like GitLab's `trigger` with `strategy: depend`: the calling job waits
-# for the child and can read its outputs.
-#
-# Routing is by a tag in the pull request title: [APP], [INFRA] or [DOC]. More
-# than one may appear. A title with none of them runs everything, on the
-# principle that an unrouted change should be over-checked rather than waved
-# through.
-#
-# The trade this accepts: the tag is a claim, while a diff is evidence. A pull
-# request titled [DOC] that edits web/ will skip the specs. That is the cost of
-# declaring the pipeline rather than deriving it.
+# The routing itself lives in .github/actions/pipeline-router, which is written
+# to be lifted into another project — see its README for the pattern and the two
+# traps that come with it.
 on:
   pull_request:
     # `edited` matters: without it, a pull request opened as [DOC] and retitled
@@ -34,48 +24,23 @@ jobs:
     name: Route
     runs-on: ubuntu-latest
     outputs:
-      app: ${{ steps.route.outputs.app }}
-      infra: ${{ steps.route.outputs.infra }}
-      docs: ${{ steps.route.outputs.docs }}
+      selected: ${{ steps.route.outputs.selected }}
     steps:
-      - name: Read the tag from the pull request title
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/pipeline-router
         id: route
-        # The title is attacker-controlled — anyone able to open a pull request
-        # chooses it — so it arrives through the environment. Interpolating
-        # ${{ ... }} straight into a run block would let a crafted title inject
-        # shell.
-        env:
-          TITLE: ${{ github.event.pull_request.title }}
-        run: |
-          set -euo pipefail
-
-          app=false
-          infra=false
-          docs=false
-
-          if grep -qiE '\[app\]'   <<< "$TITLE"; then app=true;   fi
-          if grep -qiE '\[infra\]' <<< "$TITLE"; then infra=true; fi
-          if grep -qiE '\[docs?\]' <<< "$TITLE"; then docs=true;  fi
-
-          if [ "$app" = false ] && [ "$infra" = false ] && [ "$docs" = false ]; then
-            echo "::warning::No [APP], [INFRA] or [DOC] tag in the title — running every pipeline. Tag the title to route it."
-            app=true
-            infra=true
-          fi
-
-          {
-            echo "app=$app"
-            echo "infra=$infra"
-            echo "docs=$docs"
-          } >> "$GITHUB_OUTPUT"
-
-          echo "::notice::Title: $TITLE"
-          echo "::notice::Pipelines — app=$app infra=$infra docs=$docs"
+        with:
+          title: ${{ github.event.pull_request.title }}
+          tags: app infra doc
+          # Every pipeline, so an untagged pull request is over-checked rather
+          # than waved through.
+          fallback: app infra
 
   app:
     name: App
     needs: route
-    if: needs.route.outputs.app == 'true'
+    if: contains(fromJSON(needs.route.outputs.selected), 'app')
     uses: ./.github/workflows/ci-app.yml
     permissions:
       contents: read
@@ -85,7 +50,7 @@ jobs:
   infra:
     name: Infra
     needs: route
-    if: needs.route.outputs.infra == 'true'
+    if: contains(fromJSON(needs.route.outputs.selected), 'infra')
     uses: ./.github/workflows/ci-infra.yml
     permissions:
       contents: read
@@ -103,17 +68,16 @@ jobs:
       contents: read
       security-events: write
     with:
-      ruby: ${{ needs.route.outputs.app == 'true' }}
+      ruby: ${{ contains(fromJSON(needs.route.outputs.selected), 'app') }}
 
   # The one check to require on main.
   #
   # A reusable workflow that is never called contributes no check runs at all —
-  # the same trap `paths-ignore` sets, and the reason the old `Trivy` check used
-  # to hang a documentation pull request forever. Requiring `App / Lint` would
-  # deadlock every [INFRA] pull request on a status that is never coming.
+  # the same trap `paths-ignore` sets. Requiring `App / Lint` would deadlock
+  # every [INFRA] pull request on a status that is never coming.
   #
   # This job always runs, so it always reports, and it is red if any pipeline
-  # that *did* run came back red.
+  # that did run came back red.
   gate:
     name: CI
     needs: [route, app, infra, security]

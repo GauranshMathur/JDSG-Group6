@@ -19,25 +19,20 @@ and can read its outputs.
 | `ci-infra.yml` | `[INFRA]` | Compose validation, Trivy misconfiguration scan over `infra/`. Terraform `fmt`/`validate`/`apply` arrive with the Terraform in I-1b |
 | `ci-security.yml` | Always | Brakeman, bundler-audit, Trivy filesystem scan |
 
-**Routing is by a tag in the pull request title** — `[APP]`, `[INFRA]` or `[DOC]`. More than
-one may appear, and `[APP][INFRA]` runs both. Matching is case-insensitive, and `[DOCS]` is
-accepted alongside `[DOC]`.
+**Routing is by a tag in the pull request title** — `[APP]`, `[INFRA]` or `[DOC]`.
+`[APP][INFRA]` runs both, matching is case-insensitive, and a title with no recognised tag
+runs everything with a warning. Failing open on coverage is the safe direction: a change
+nobody routed should be over-checked rather than waved through.
 
-An untitled-by-tag pull request **runs everything**, with a warning. Failing open on coverage
-is the safe direction: a change nobody routed should be over-checked rather than waved
-through.
+The routing step is [`.github/actions/pipeline-router`](../.github/actions/pipeline-router),
+written to be lifted into another project — its README has the pattern and the traps.
+`uses:` cannot be an expression, so a parent workflow can never be shared across
+repositories; the router is the part that ports, and the parent is the ~40 lines each
+project writes for itself.
 
-Three things this design has to get right:
-
-- **The title is a claim; a diff is evidence.** A pull request titled `[DOC]` that edits
-  `web/` will skip the specs and the container build. This is the accepted cost of declaring
-  the pipeline instead of deriving it from changed paths, and the reason routing fails open
-  when no tag is present.
-- **The title is attacker-controlled.** Anyone who can open a pull request chooses it, so it
-  reaches the routing script through an environment variable rather than `${{ }}`
-  interpolation, which would be a shell injection.
-- **The trigger includes `edited`.** Without it, a pull request opened as `[DOC]` and
-  retitled to `[APP]` would keep the checks it got the first time.
+**The trade:** a title is a claim, a diff is evidence. A pull request titled `[DOC]` that
+edits `web/` will skip the specs. That is the cost of declaring the pipeline rather than
+deriving it from changed paths, and the reason an untagged title runs everything.
 
 **The security pipeline is never routed around.** Its Ruby-specific analysis is gated on
 `[APP]`, because Brakeman has nothing to say about a Terraform change, but the Trivy scan is
@@ -47,17 +42,11 @@ bit as leaked as one in a Ruby file. Running it unconditionally is also what mak
 
 ### One required check, not seven
 
-`ci.yml` ends with a **`CI`** job that always runs, `needs` every child, and fails if any of
-them came back `failure` or `cancelled`. **That is the check to require on `main`** — not the
-children.
-
-This is not tidiness. A reusable workflow that is never called contributes *no check runs at
-all*, which is the same trap `paths-ignore` sets: requiring `App / Lint` would leave every
-`[INFRA]` pull request waiting forever for a status that is never coming. It is the failure
-the `Trivy` check used to show on documentation-only pull requests, one layer up.
-
-An always-running aggregate job reports on every pull request by construction, so it can be
-required without deadlocking anything.
+`ci.yml` ends with a **`CI`** job that always runs, `needs` every child, and fails if any
+came back `failure` or `cancelled`. **That is the check to require on `main`** — not the
+children. A reusable workflow that is never called contributes *no check runs at all*, so
+requiring `App / Lint` would leave every `[INFRA]` pull request waiting forever for a status
+that is never coming. Same trap `paths-ignore` sets, one layer up.
 
 ### The routing tag and the release
 

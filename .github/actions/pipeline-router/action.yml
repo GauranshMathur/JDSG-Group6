@@ -1,0 +1,67 @@
+name: Pipeline router
+description: >
+  Picks which child pipelines a pull request needs from tags in its title —
+  [APP], [INFRA], [DOC] — and returns them as a JSON array.
+
+inputs:
+  title:
+    description: The pull request title to read tags from.
+    required: true
+  tags:
+    description: >
+      The tags this repository routes on, space- or comma-separated, without
+      brackets. For example "app infra doc".
+    required: true
+  fallback:
+    description: >
+      What to select when the title carries none of the tags. Leave empty to
+      select nothing. Naming every pipeline here is the safe choice: an
+      unrouted change is then over-checked rather than waved through.
+    required: false
+    default: ""
+
+outputs:
+  selected:
+    description: JSON array of the selected tags, e.g. ["app","infra"].
+    value: ${{ steps.select.outputs.selected }}
+
+runs:
+  using: composite
+  steps:
+    - id: select
+      shell: bash
+      # The title is attacker-controlled — anyone able to open a pull request
+      # chooses it — so it arrives through the environment. Interpolating
+      # ${{ inputs.title }} into the script would be a shell injection.
+      env:
+        TITLE: ${{ inputs.title }}
+        TAGS: ${{ inputs.tags }}
+        FALLBACK: ${{ inputs.fallback }}
+      run: |
+        set -euo pipefail
+
+        selected=()
+        for tag in ${TAGS//,/ }; do
+          # -F so a tag is a literal string rather than a pattern, and -i so
+          # [infra] and [INFRA] both match.
+          if grep -qiF "[$tag]" <<< "$TITLE"; then
+            selected+=("$tag")
+          fi
+        done
+
+        if [ ${#selected[@]} -eq 0 ] && [ -n "${FALLBACK// /}" ]; then
+          echo "::warning::No pipeline tag in the title — falling back to: $FALLBACK. Tag the title to route it."
+          for tag in ${FALLBACK//,/ }; do
+            selected+=("$tag")
+          done
+        fi
+
+        if [ ${#selected[@]} -eq 0 ]; then
+          json='[]'
+        else
+          json=$(printf '%s\n' "${selected[@]}" | jq -Rsc 'split("\n") | map(select(length > 0))')
+        fi
+
+        echo "selected=$json" >> "$GITHUB_OUTPUT"
+        echo "::notice::Title: $TITLE"
+        echo "::notice::Pipelines selected: $json"
