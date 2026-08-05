@@ -68,14 +68,23 @@ RSpec.describe User do
       expect(build(:user, username: "ADA")).not_to be_valid
     end
 
-    # ADR 0006 / F-4.6. attr_readonly makes immutability the model's rule:
-    # assignment on a persisted record raises, so no forgotten permit list can
-    # quietly allow a rename.
-    it "cannot be changed once the account exists" do
+    # F-4.6 / ADR 0007. Usernames are changeable but must stay unique.
+    it "can be changed on a persisted record" do
       user = create(:user, username: "ada")
 
-      expect { user.username = "someone_else" }
-        .to raise_error(ActiveRecord::ReadonlyAttributeError)
+      user.update!(username: "ada_lovelace")
+
+      expect(user.reload.username).to eq("ada_lovelace")
+    end
+
+    it "rejects a username change to one already taken" do
+      create(:user, username: "ada")
+      user = create(:user, username: "grace")
+
+      user.username = "ada"
+
+      expect(user).not_to be_valid
+      expect(user.errors[:username]).to include("has already been taken")
     end
   end
 
