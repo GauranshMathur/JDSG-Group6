@@ -140,6 +140,36 @@ run_case "a fix after a feat does not downgrade the bump" \
 run_case "a subject merely mentioning a prefix does not release" \
   "" "none" "v0.1.3" "docs: explain what feat: and fix: mean"
 
+# --- CI's pipeline-routing tag -----------------------------------------------
+# ci.yml routes a pull request by a tag in its title, and squash merging makes
+# that title the commit subject. Every pattern in the script is anchored at ^,
+# so before the tag was stripped these all returned bump=none: no tag, no image,
+# and an exit code of 0 saying everything was fine.
+#
+# The interesting commit is deliberately not the newest in the multi-commit
+# cases, per the note at the top of this file.
+
+run_case "[INFRA] before a feat still bumps the minor" \
+  "0.2.0" "minor" "v0.1.3" "[INFRA] feat(terraform): stand up the cluster"
+
+run_case "[APP] before a fix still bumps the patch" \
+  "0.1.4" "patch" "v0.1.3" "[APP] fix(feed): order by id"
+
+run_case "a tagged feat older than the newest commit is still seen" \
+  "0.2.0" "minor" "v0.1.3" "[APP] feat: accounts" "[DOC] docs: write it up"
+
+run_case "two tags are both stripped" \
+  "0.2.0" "minor" "v0.1.3" "[APP][INFRA] feat: the lot"
+
+run_case "a tagged breaking change below 1.0 is still capped at minor" \
+  "0.2.0" "minor" "v0.1.3" "[APP] feat!: require an account" "[DOC] docs: note it"
+
+run_case "a tagged docs commit still does not release" \
+  "" "none" "v0.1.3" "[DOC] docs: a rewrite"
+
+run_case "a tag on a non-releasing type does not accidentally release" \
+  "" "none" "v0.1.3" "[INFRA] chore: bump the provider"
+
 echo
 echo "$passed passed, $failed failed"
 [ "$failed" -eq 0 ]

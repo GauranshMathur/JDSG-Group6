@@ -55,6 +55,15 @@ while IFS= read -r -d $'\x1e' commit; do
   # one in the range.
   subject=$(printf '%s\n' "$commit" | grep -m1 -v '^[[:space:]]*$' || true)
 
+  # Strip the pipeline-routing tag CI puts in the pull request title — [APP],
+  # [INFRA], [DOC]. With squash merging the title *is* this subject, and every
+  # pattern below is anchored at ^, so "[INFRA] feat(x): y" matches none of them
+  # and the release is silently skipped: bump=none, no tag, no image, exit 0.
+  # More than one tag can appear, hence the loop.
+  while [[ "$subject" =~ ^\[[A-Za-z]+\][[:space:]]* ]]; do
+    subject="${subject#"${BASH_REMATCH[0]}"}"
+  done
+
   if printf '%s\n' "$commit" | grep -qE '^BREAKING[ -]CHANGE:' ||
      printf '%s\n' "$subject" | grep -qE '^[a-z]+(\([^)]*\))?!:'; then
     bump="major"
