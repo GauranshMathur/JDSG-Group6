@@ -23,8 +23,7 @@ Rails.application.routes.draw do
   end
 
   # Public profiles. The @ is literal — /@ada — so a profile URL reads the way
-  # the handle is written everywhere else. Stable forever, because usernames
-  # never change (ADR 0006).
+  # the handle is written everywhere else.
   get "@:username", to: "profiles#show", as: :profile,
       constraints: { username: /[A-Za-z0-9_]+/ }
 

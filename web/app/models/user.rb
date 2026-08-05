@@ -16,11 +16,6 @@ class User < ApplicationRecord
   has_many :likes, dependent: :destroy
   has_many :reposts, dependent: :destroy
 
-  # Chosen at registration and never changed — ADR 0006. attr_readonly makes
-  # that the model's rule rather than a convention: assigning to it on a
-  # persisted record raises, so there is no code path that renames anyone.
-  attr_readonly :username
-
   # Addresses are stored already lower-cased, so the unique index on the column
   # enforces case-insensitive uniqueness on its own (F-2.2). The alternative — a
   # functional index over LOWER(email_address) — is written differently on SQLite

@@ -20,16 +20,20 @@
     <%= form.file_field :avatar, accept: "image/png,image/jpeg,image/webp,image/gif", class: "auth__input" %>
     <p class="auth__hint">PNG, JPEG, WebP or GIF. Will be resized and converted to WebP.</p>
 
-    <span class="auth__label">Username</span>
-    <p class="auth__static">@<%= @user.username %></p>
-    <p class="auth__hint">Usernames are permanent — this one is yours for good.</p>
+    <%= form.label :username, "Username", class: "auth__label" %>
+    <%= form.text_field :username,
+          class: "auth__input",
+          maxlength: 20,
+          pattern: "[a-zA-Z0-9_]{3,20}",
+          title: "3–20 characters: letters, numbers and underscores only" %>
+    <p class="auth__hint">3–20 characters: letters, numbers and underscores. Must be unique.</p>
 
     <%= form.label :display_name, "Display name", class: "auth__label" %>
     <%= form.text_field :display_name,
           class: "auth__input",
           maxlength: User::MAX_DISPLAY_NAME_LENGTH,
-          placeholder: @user.username %>
-    <p class="auth__hint">Shown beside your handle. Leave blank to go by @<%= @user.username %>.</p>
+          placeholder: Current.user.username %>
+    <p class="auth__hint">Shown beside your handle. Leave blank to go by @<%= Current.user.username %>.</p>
 
     <%= form.label :bio, "Bio", class: "auth__label" %>
     <%= form.text_area :bio,
@@ -42,6 +46,8 @@
   <% end %>
 
   <p class="auth__alternative">
-    <%= link_to "Back to your profile", profile_path(@user.username) %>
+    <%# Current.user, not @user: after a rejected edit @user carries the value
+        that was refused, which would aim this link at someone else's profile. %>
+    <%= link_to "Back to your profile", profile_path(Current.user.username) %>
   </p>
 </div>

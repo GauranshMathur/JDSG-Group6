@@ -18,8 +18,13 @@ class ProfilesController < ApplicationController
     @user = Current.user
   end
 
+  # Edits are applied to a separate instance, not to Current.user. A rejected
+  # edit leaves its invalid values on the object it was assigned to, and the
+  # layout renders the signed-in identity from Current.user — so editing that
+  # object in place would show the refused username in the sidebar, and point
+  # the profile link at whoever actually holds it.
   def update
-    @user = Current.user
+    @user = User.find(Current.user.id)
 
     if @user.update(profile_params)
       redirect_to profile_path(@user.username), notice: "Profile updated."
@@ -30,10 +35,7 @@ class ProfilesController < ApplicationController
 
   private
 
-    # No :username here — it is fixed at registration (ADR 0006). Strong
-    # parameters drop it silently; attr_readonly on the model would raise if
-    # anything got past them.
     def profile_params
-      params.require(:user).permit(:display_name, :bio, :avatar)
+      params.require(:user).permit(:username, :display_name, :bio, :avatar)
     end
 end
