@@ -1,8 +1,8 @@
 name: Security pipeline
 
-# Called by ci.yml on every pull request, whatever the title says. Routing may
-# decide which build runs; it does not get to decide whether the tree is scanned
-# for secrets.
+# Called by ci.yml on every pull request, whatever changed. Routing may decide
+# which build runs; it does not get to decide whether the tree is scanned for
+# secrets.
 #
 # The Ruby-specific analysis is the part that varies: Brakeman and bundler-audit
 # have nothing to say about a Terraform change, so the caller passes `ruby` to
@@ -22,6 +22,7 @@ jobs:
   sast:
     name: SAST
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: read
       security-events: write

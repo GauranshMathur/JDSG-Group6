@@ -1,7 +1,7 @@
 name: Infra pipeline
 
-# The infrastructure pipeline. Called by ci.yml when the pull request title
-# carries [INFRA] — never triggered on its own.
+# The infrastructure pipeline. Called by ci.yml when a pull request touches
+# infra/ (or a workflow) — never triggered on its own.
 #
 # Today it checks the Compose files, because that is all `infra/` holds. The
 # Terraform steps arrive with the Terraform itself in I-1b, rather than being
@@ -24,6 +24,7 @@ jobs:
   compose:
     name: Compose files
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
 
@@ -54,6 +55,7 @@ jobs:
   misconfig:
     name: Misconfiguration scan
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 

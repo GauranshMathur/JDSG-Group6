@@ -1,7 +1,7 @@
 name: App pipeline
 
-# The Rails application's pipeline. Called by ci.yml when the pull request title
-# carries [APP] — never triggered on its own.
+# The Rails application's pipeline. Called by ci.yml when a pull request touches
+# web/ (or a workflow) — never triggered on its own.
 on:
   workflow_call:
 
@@ -12,6 +12,7 @@ jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
@@ -27,6 +28,7 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -45,6 +47,7 @@ jobs:
   container:
     name: Container build, image scan and DAST
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: read
       security-events: write
@@ -170,6 +173,7 @@ jobs:
   sonarqube:
     name: SonarQube
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:

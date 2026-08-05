@@ -1,41 +1,53 @@
 #!/usr/bin/env bash
 #
-# Tests for route.sh. Each case runs the real script with a title and compares
-# the JSON it prints.
+# Tests for route.sh. Each case runs the real script with a list of changed
+# files and compares the JSON it prints.
 #
 #   .github/actions/pipeline-router/test-route.sh
 #
 # Worth having because routing decides which checks a pull request gets, and a
-# router that silently selects nothing is indistinguishable from a green build:
-# every pipeline is skipped, the gate sees nothing that failed, and the pull
-# request goes green having tested none of the change.
+# router that selects nothing is indistinguishable from a green build: every
+# pipeline is skipped, the gate sees nothing that failed, and the pull request
+# goes green having tested none of the change.
 #
 # So the cases below care most about the ways it could under-select — an
-# unrecognised tag, a near-miss, an empty fallback — and about the substring
-# traps that would make it over-select.
+# unclassified path, an empty diff, a rule that nearly matches — and about the
+# anchoring mistakes that would make it match the wrong directory.
 set -euo pipefail
 
 SCRIPT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/route.sh"
-TAGS="app infra doc"
+
+# The rules this repository routes on, kept in step with ci.yml.
+RULES='app:^web/
+app:^\.github/
+infra:^infra/
+infra:^\.github/
+docs:^docs/
+docs:\.md$
+docs:^LICENSE$'
+
+DEFAULT="app infra"
 passed=0
 failed=0
 
-# run_case <name> <expected json> <fallback> <title>
+# run_case <name> <expected json> <file>...
 run_case() {
-  local name="$1" want="$2" fallback="$3" title="$4"
-  local got
+  local name="$1" want="$2"
+  shift 2
+  local files got
+  files="$(printf '%s\n' "$@")"
 
   # || true so a script that exits non-zero is reported as one failed case.
   # Without it, set -e kills the harness at the first crash and every case after
-  # it silently never runs — which is how an empty title went unnoticed.
-  got="$(TITLE="$title" TAGS="$TAGS" FALLBACK="$fallback" bash "$SCRIPT" 2>/dev/null || true)"
+  # it silently never runs.
+  got="$(FILES="$files" RULES="$RULES" DEFAULT="$DEFAULT" bash "$SCRIPT" 2>/dev/null || true)"
 
   if [ "$got" = "$want" ]; then
     echo "PASS  $name"
     passed=$((passed + 1))
   else
     echo "FAIL  $name"
-    echo "        title '$title'"
+    echo "        files $*"
     echo "        want  $want"
     echo "        got   $got"
     failed=$((failed + 1))
@@ -47,88 +59,126 @@ echo
 
 # --- The ordinary routes -----------------------------------------------------
 
-run_case "a single tag selects its pipeline" \
-  '["app"]' "app infra" "[APP] feat(feed): rank posts"
+run_case "an app change selects the app pipeline" \
+  '["app"]' "web/app/models/user.rb"
 
-run_case "infra routes to infra alone" \
-  '["infra"]' "app infra" "[INFRA] feat(terraform): stand up the cluster"
+run_case "an infra change selects the infra pipeline" \
+  '["infra"]' "infra/terraform/eks.tf"
 
-run_case "doc routes to neither app nor infra" \
-  '["doc"]' "app infra" "[DOC] docs: update the roadmap"
+run_case "a docs change selects neither app nor infra" \
+  '["docs"]' "docs/roadmap.md"
 
-run_case "two tags select both, in the order the repository lists them" \
-  '["app","infra"]' "app infra" "[APP][INFRA] ci(pipelines): route by title"
+run_case "a root markdown file is documentation" \
+  '["docs"]' "README.md"
 
-run_case "tags separated by other text are both found" \
-  '["app","infra"]' "app infra" "[APP] and also [INFRA]: the lot"
+run_case "LICENSE is documentation" \
+  '["docs"]' "LICENSE"
 
-run_case "matching is case-insensitive" \
-  '["infra"]' "app infra" "[infra] fix: lowercase tag"
+run_case "touching both selects both, in rule order" \
+  '["app","infra"]' "web/app/models/user.rb" "infra/terraform/eks.tf"
 
-run_case "a tag later in the title is still found" \
-  '["app"]' "app infra" "fix(feed): order by id [APP]"
+run_case "several files in one directory select it once" \
+  '["app"]' "web/app/models/user.rb" "web/spec/models/user_spec.rb"
+
+run_case "a workflow change selects app and infra, since it can break either" \
+  '["app","infra"]' ".github/workflows/ci.yml"
+
+run_case "code and docs together still run the code pipeline" \
+  '["app","docs"]' "web/app/models/user.rb" "docs/roadmap.md"
 
 # --- Under-selecting is the dangerous direction ------------------------------
 # A router that selects nothing produces a green pull request that ran no
 # checks, which looks exactly like a passing one.
 
-run_case "no tag falls back rather than selecting nothing" \
-  '["app","infra"]' "app infra" "feat: someone forgot the tag"
+run_case "an unclassified path falls back to the defaults" \
+  '["app","infra"]' "Makefile"
 
-run_case "a near-miss tag falls back rather than selecting nothing" \
-  '["app","infra"]' "app infra" "[DOCS] docs: plural is not the tag"
+run_case "an unclassified path pulls in the defaults alongside what matched" \
+  '["docs","app","infra"]' "docs/roadmap.md" "Makefile"
 
-run_case "an unknown tag falls back" \
-  '["app","infra"]' "app infra" "[BACKEND] feat: not a tag here"
+run_case "a dotfile at the root is unclassified, not ignored" \
+  '["app","infra"]' ".ruby-version"
 
-run_case "an empty title falls back" \
-  '["app","infra"]' "app infra" ""
+run_case "a new top-level directory is unclassified, not ignored" \
+  '["app","infra"]' "scripts/deploy.sh"
 
-run_case "brackets with no tag inside fall back" \
-  '["app","infra"]' "app infra" "[] feat: empty brackets"
 
-# --- Over-selecting: substrings that must not match --------------------------
+# --- Anchoring: the wrong directory must not match ---------------------------
 
-run_case "a tag that is a prefix of a longer word does not match" \
-  '["app","infra"]' "app infra" "[apple] feat: not the app tag"
+run_case "a path merely containing web/ does not select app" \
+  '["app","infra"]' "vendor/web/thing.rb"
 
-run_case "the bare word without brackets does not match" \
-  '["app","infra"]' "app infra" "feat: this app change has no tag"
+run_case "a directory sharing a prefix does not match" \
+  '["app","infra"]' "website/index.html"
 
-run_case "a tag inside a longer bracketed word does not match" \
-  '["app","infra"]' "app infra" "[infrastructure] feat: not the infra tag"
+run_case "docs in a nested path is not the docs directory" \
+  '["app"]' "web/docs/notes.txt"
 
-# --- The fallback itself -----------------------------------------------------
+# --- Rules that overlap ------------------------------------------------------
 
-run_case "an empty fallback selects nothing when no tag matches" \
-  '[]' "" "feat: no tag and nothing to fall back on"
+run_case "a markdown file inside docs selects docs once, not twice" \
+  '["docs"]' "docs/ci-cd.md"
 
-run_case "a comma-separated fallback is split like a spaced one" \
-  '["app","infra"]' "app,infra" "feat: no tag at all"
+run_case "a markdown file inside web is documentation and app" \
+  '["app","docs"]' "web/README.md"
 
-# --- The title is attacker-controlled ----------------------------------------
-# Anyone able to open a pull request chooses it. It must be inert text.
+# --- Misconfiguration must be loud ------------------------------------------
+# Given nothing to work from, the router must refuse rather than select
+# nothing — an empty selection is the one result that fails green.
 
-run_case "shell metacharacters in the title are text, not code" \
-  '["app","infra"]' "app infra" 'evil"; rm -rf /; echo "'
-
-run_case "a command substitution in the title is not evaluated" \
-  '["app","infra"]' "app infra" '$(touch /tmp/pwned-by-router) feat: nope'
-
-run_case "backticks in the title are not evaluated" \
-  '["app","infra"]' "app infra" '`touch /tmp/pwned-by-router` feat: nope'
-
-run_case "a tag still routes when the title also carries metacharacters" \
-  '["infra"]' "app infra" '[INFRA] feat: $(whoami) && echo hi'
-
-if [ -e /tmp/pwned-by-router ]; then
-  echo "FAIL  the title was evaluated as shell — /tmp/pwned-by-router exists"
-  rm -f /tmp/pwned-by-router
+if RULES="$RULES" DEFAULT="$DEFAULT" bash "$SCRIPT" >/dev/null 2>&1; then
+  echo "FAIL  no files and no base/head should be an error, not an empty selection"
   failed=$((failed + 1))
 else
-  echo "PASS  no title was evaluated as shell"
+  echo "PASS  no files and no base/head is an error, not an empty selection"
   passed=$((passed + 1))
 fi
+
+# --- The git path, which is the one CI uses ----------------------------------
+# Everything above hands the script a file list. CI does not: it passes BASE and
+# HEAD and lets the script run the diff, so that path needs exercising too.
+
+git_case() {
+  local name="$1" want="$2" file="$3"
+  local repo got
+  repo="$(mktemp -d)"
+  (
+    cd "$repo"
+    git init -q
+    git config user.email t@example.com
+    git config user.name Test
+    git config commit.gpgsign false
+    git commit -q --allow-empty -m "base"
+    if [ -n "$file" ]; then
+      mkdir -p "$(dirname "$file")"
+      echo x > "$file"
+      git add -A
+      git commit -q -m "change"
+    else
+      git commit -q --allow-empty -m "nothing"
+    fi
+  )
+  got="$(cd "$repo" && RULES="$RULES" DEFAULT="$DEFAULT" \
+    BASE="$(git -C "$repo" rev-parse HEAD~1)" HEAD="$(git -C "$repo" rev-parse HEAD)" \
+    bash "$SCRIPT" 2>/dev/null || true)"
+  rm -rf "$repo"
+
+  if [ "$got" = "$want" ]; then
+    echo "PASS  $name"
+    passed=$((passed + 1))
+  else
+    echo "FAIL  $name"
+    echo "        want $want"
+    echo "        got  $got"
+    failed=$((failed + 1))
+  fi
+}
+
+git_case "a diff derived from base..head routes the same way" \
+  '["app"]' "web/app/models/user.rb"
+
+git_case "a commit changing nothing selects nothing" \
+  '[]' ""
 
 echo
 echo "$passed passed, $failed failed"

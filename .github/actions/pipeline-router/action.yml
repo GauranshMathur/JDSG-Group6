@@ -1,28 +1,40 @@
 name: Pipeline router
 description: >
-  Picks which child pipelines a pull request needs from tags in its title —
-  [APP], [INFRA], [DOC] — and returns them as a JSON array.
+  Picks which child pipelines a pull request needs from the files it changes,
+  and returns them as a JSON array.
 
 inputs:
-  title:
-    description: The pull request title to read tags from.
-    required: true
-  tags:
+  rules:
     description: >
-      The tags this repository routes on, space- or comma-separated, without
-      brackets. For example "app infra doc".
+      One "pipeline:regex" per line. A changed file matching the regex selects
+      that pipeline. A pipeline may have several rules, and a path may select
+      more than one pipeline.
     required: true
-  fallback:
+  default:
     description: >
-      What to select when the title carries none of the tags. Leave empty to
-      select nothing. Naming every pipeline here is the safe choice: an
-      unrouted change is then over-checked rather than waved through.
+      Pipelines to add when a changed file matches no rule at all, space- or
+      comma-separated. Naming every pipeline here is the safe choice: a file
+      type nobody anticipated then gets checked rather than slipping through.
+    required: false
+    default: ""
+  base:
+    description: Commit to diff from. Required unless `files` is given.
+    required: false
+    default: ""
+  head:
+    description: Commit to diff to. Required unless `files` is given.
+    required: false
+    default: ""
+  files:
+    description: >
+      Newline-separated changed paths, if you would rather supply them than
+      have the action derive them from base..head with git.
     required: false
     default: ""
 
 outputs:
   selected:
-    description: JSON array of the selected tags, e.g. ["app","infra"].
+    description: JSON array of the selected pipelines, e.g. ["app","infra"].
     value: ${{ steps.select.outputs.selected }}
 
 runs:
@@ -30,15 +42,16 @@ runs:
   steps:
     - id: select
       shell: bash
-      # The title is attacker-controlled — anyone able to open a pull request
-      # chooses it — so it arrives through the environment. Interpolating
-      # ${{ inputs.title }} into the script would be a shell injection.
-      #
       # The logic is in route.sh rather than inline here so that test-route.sh
       # exercises the script this action actually runs, instead of a copy free
       # to drift from it.
+      #
+      # Values arrive through the environment rather than ${{ }} interpolation,
+      # which would splice them into the script as shell.
       env:
-        TITLE: ${{ inputs.title }}
-        TAGS: ${{ inputs.tags }}
-        FALLBACK: ${{ inputs.fallback }}
+        RULES: ${{ inputs.rules }}
+        DEFAULT: ${{ inputs.default }}
+        BASE: ${{ inputs.base }}
+        HEAD: ${{ inputs.head }}
+        FILES: ${{ inputs.files }}
       run: ${{ github.action_path }}/route.sh

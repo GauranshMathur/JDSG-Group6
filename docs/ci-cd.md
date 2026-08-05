@@ -15,14 +15,25 @@ and can read its outputs.
 | Workflow | Runs | Contains |
 | --- | --- | --- |
 | `ci.yml` | Every pull request | The pipeline self-test, routing, and the aggregate gate |
-| `ci-app.yml` | `[APP]` | Lint, Test, Container build + image scan + DAST, SonarQube |
-| `ci-infra.yml` | `[INFRA]` | Compose validation, Trivy misconfiguration scan over `infra/`. Terraform `fmt`/`validate`/`apply` arrive with the Terraform in I-1b |
+| `ci-app.yml` | `web/**` | Lint, Test, Container build + image scan + DAST, SonarQube |
+| `ci-infra.yml` | `infra/**` | Compose validation, Trivy misconfiguration scan over `infra/`. Terraform `fmt`/`validate`/`apply` arrive with the Terraform in I-1b |
 | `ci-security.yml` | Always | Brakeman, bundler-audit, Trivy filesystem scan |
 
-**Routing is by a tag in the pull request title** — `[APP]`, `[INFRA]` or `[DOC]`.
-`[APP][INFRA]` runs both, matching is case-insensitive, and a title with no recognised tag
-runs everything with a warning. Failing open on coverage is the safe direction: a change
-nobody routed should be over-checked rather than waved through.
+**Routing is by changed path** — the convention GitHub repositories settled on, and what
+`dorny/paths-filter` does. The rules live in `ci.yml`'s `route` job:
+
+| Path | Selects |
+| --- | --- |
+| `web/**` | app |
+| `infra/**` | app's counterpart, infra |
+| `.github/**` | app *and* infra — a workflow change can break either |
+| `docs/**`, `*.md`, `LICENSE` | docs, which has no pipeline of its own |
+| anything else | the default: app **and** infra |
+
+That last row is the safety property, and the reason this is a small script rather than a
+stock filter action. A path nobody anticipated matches no rule; if that selected nothing, the
+pull request would go green having run no checks at all. Instead it pulls in the defaults, so
+the failure mode is running too much, never too little.
 
 The routing step is [`.github/actions/pipeline-router`](../.github/actions/pipeline-router),
 written to be lifted into another project — its README has the pattern and the traps.
@@ -30,28 +41,35 @@ written to be lifted into another project — its README has the pattern and the
 repositories; the router is the part that ports, and the parent is the ~40 lines each
 project writes for itself.
 
-**The trade:** a title is a claim, a diff is evidence. A pull request titled `[DOC]` that
-edits `web/` will skip the specs. That is the cost of declaring the pipeline rather than
-deriving it from changed paths, and the reason an untagged title runs everything.
+**Rules are regexes, so they are anchored.** `^web/` matches the `web` directory; `web/`
+would also match `vendor/web/`. There are tests for exactly that.
 
-**The security pipeline is never routed around.** Its Ruby-specific analysis is gated on
-`[APP]`, because Brakeman has nothing to say about a Terraform change, but the Trivy scan is
-not: it looks for committed secrets, and a credential pasted into a markdown file is every
-bit as leaked as one in a Ruby file. Running it unconditionally is also what makes the
-`Trivy` code-scanning check appear on every pull request.
+**The security pipeline is never routed around.** Its Ruby-specific analysis is gated on the
+app pipeline being in play, because Brakeman has nothing to say about a Terraform change, but
+the Trivy scan is not: it looks for committed secrets, and a credential pasted into a
+markdown file is every bit as leaked as one in a Ruby file. Running it unconditionally is
+also what makes the `Trivy` code-scanning check appear on every pull request.
 
 ### The pipeline's own smoke test
 
-A **Pipeline self-test** job runs on every pull request, never routed around,
-exercising `route.sh` and `next-version.sh` against their test suites.
+A **Pipeline self-test** job runs on every pull request, never routed around. It runs
+[`actionlint`](https://github.com/rhysd/actionlint) over the workflows, and exercises
+`route.sh` and `next-version.sh` against their test suites.
 
-**A broken router fails green**, which is why this is not optional. If routing
-selects nothing, every pipeline is skipped, the aggregate gate sees nothing that
-failed, and the pull request goes green having tested none of the change. The
-router's cases therefore weigh towards under-selection — unknown tags,
-near-misses, an empty title — and towards the substring traps that would make it
-over-select. Writing them found a real bug: an empty title aborted the script
-rather than falling back.
+`actionlint` is the standard check for workflow YAML and catches what a parser cannot:
+expression injection, invalid `needs:` references, deprecated syntax. It also runs
+shellcheck over every `run:` block, so the bash in these workflows is linted too.
+
+**A broken router fails green**, which is why this is not optional. If routing selects
+nothing, every pipeline is skipped, the aggregate gate sees nothing that failed, and the pull
+request goes green having tested none of the change. It also cannot be routed: you cannot use
+a routed pipeline to test the router, since a broken one may route away from its own test.
+
+The cases therefore weigh towards under-selection — unclassified paths, an empty diff,
+misconfiguration — and towards anchoring mistakes that match the wrong directory. Writing
+them found two real bugs: a misconfigured call selected nothing instead of failing, and a
+composite action's `env:` always *sets* every variable, so "unset" could not mean "derive
+from git".
 
 `test-next-version.sh` is in the same job because it **had never run in CI at
 all.** The script that derives every release version was guarded only by someone
@@ -62,20 +80,22 @@ remembering to run it by hand — a script that has shipped a wrong tag twice.
 `ci.yml` ends with a **`CI`** job that always runs, `needs` every child, and fails if any
 came back `failure` or `cancelled`. **That is the check to require on `main`** — not the
 children. A reusable workflow that is never called contributes *no check runs at all*, so
-requiring `App / Lint` would leave every `[INFRA]` pull request waiting forever for a status
+requiring `App / Lint` would leave every infrastructure-only pull request waiting for a status
 that is never coming. Same trap `paths-ignore` sets, one layer up.
 
-### The routing tag and the release
+### Bracketed prefixes and the release
 
 With squash merging the pull request title becomes the commit subject, and
-`next-version.sh` anchors every Conventional Commit pattern at `^`. So
-`[INFRA] feat(terraform): …` matched nothing, `bump=none`, and the release was silently
+`next-version.sh` anchors every Conventional Commit pattern at `^`. A title like
+`[WIP] feat(feed): …` therefore matched nothing, `bump=none`, and the release was silently
 skipped — no tag, no image, exit code 0.
 
-The script now strips leading `[TAG]` markers before classifying, with regression tests
-covering single tags, stacked tags, and tagged commits that must *not* release. As ever with
-this script, the tests were checked against the unfixed version first: five of the seven
-failed, which is the only evidence that they test anything.
+Routing no longer uses the title, but bracketed prefixes are common enough in pull request
+titles that the hazard stands on its own. The script strips leading `[TAG]` markers before
+classifying, with regression tests covering single tags, stacked tags, and tagged commits
+that must *not* release. As ever with this script, the tests were checked against the
+unfixed version first: five of the seven failed, which is the only evidence they test
+anything.
 
 
 All work reaches the default branch through a pull request, and a pull request merges only

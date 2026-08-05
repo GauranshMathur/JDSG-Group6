@@ -151,9 +151,9 @@ the release will ship it.
 
 **Require exactly one check: `CI`.** Since the pipelines became parent and child workflows,
 requiring the individual jobs would deadlock. A reusable workflow that is never called
-contributes no check runs at all, so requiring `App / Lint` would leave every `[INFRA]` pull
-request waiting forever for a status that is never coming — the same trap `paths-ignore`
-sets. `ci.yml`'s `CI` job exists for this: it always runs, `needs` every child, and is red if
+contributes no check runs at all, so requiring `App / Lint` would leave every
+infrastructure-only pull request waiting forever for a status that is never coming — the
+same trap `paths-ignore` sets. `ci.yml`'s `CI` job exists for this: it always runs, `needs` every child, and is red if
 any pipeline that ran came back red. See [`ci-cd.md`](ci-cd.md).
 
 `Trivy` is *not* a job either — it is a code-scanning check created by the SARIF upload. It

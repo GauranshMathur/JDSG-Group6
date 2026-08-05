@@ -1,26 +1,22 @@
 # Pipeline router
 
-Routes a pull request to child pipelines by a tag in its title — `[APP]`,
-`[INFRA]`, `[DOC]` — so a Terraform change does not run the application's test
-suite and a documentation change does not build a container.
+Routes a pull request to child pipelines by the files it changes, so a Terraform
+change does not run the application's test suite and a documentation change does
+not build a container.
 
 GitHub has no parent/child pipelines. The equivalent is a **reusable workflow**:
 `on: workflow_call` in the child, `uses: ./.github/workflows/child.yml` in the
 parent. That behaves like GitLab's `trigger` with `strategy: depend` — the
 calling job waits for the child and can read its outputs.
 
-This action is the routing step. It reads the title, matches it against the tags
-you route on, and returns a JSON array.
+This action is the routing step. It diffs `base..head`, matches each changed
+path against your rules, and returns a JSON array of the pipelines to run.
 
 ## Use it
 
 ```yaml
 name: CI
-on:
-  pull_request:
-    # `edited` matters: without it, a pull request opened as [DOC] and retitled
-    # to [APP] keeps the checks it got the first time.
-    types: [opened, synchronize, reopened, edited]
+on: pull_request
 
 jobs:
   route:
@@ -29,12 +25,21 @@ jobs:
       selected: ${{ steps.route.outputs.selected }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0          # both ends of the diff must be present
       - uses: ./.github/actions/pipeline-router
         id: route
         with:
-          title: ${{ github.event.pull_request.title }}
-          tags: app infra doc
-          fallback: app infra
+          base: ${{ github.event.pull_request.base.sha }}
+          head: ${{ github.event.pull_request.head.sha }}
+          rules: |
+            app:^web/
+            app:^\.github/
+            infra:^infra/
+            infra:^\.github/
+            docs:^docs/
+            docs:\.md$
+          default: app infra
 
   app:
     needs: route
@@ -46,6 +51,7 @@ jobs:
     needs: [route, app]
     if: always()
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - env:
           RESULTS: ${{ toJSON(needs) }}
@@ -58,19 +64,27 @@ jobs:
 repositories — it has to name its children literally. This action is the part
 that ports; the parent above is the ~40 lines each project writes for itself.
 
+## Why not `dorny/paths-filter`
+
+It is the usual choice and it is good. The one thing it does not express is
+**`default`** — what to do with a changed file that matches *no* filter. Without
+that, an unanticipated path matches nothing, selects nothing, and the pull
+request goes green having run no checks. Here an unclassified file pulls in the
+default pipelines instead, so the failure mode is running too much rather than
+too little.
+
+If you do not need that property, use `dorny/paths-filter` and delete this.
+
 ## Two things to get right
 
 **Require one aggregate check, not the children.** A reusable workflow that is
 never called contributes *no check runs at all* — so requiring `app / Lint` on
-your default branch leaves every `[INFRA]` pull request waiting forever for a
+your default branch leaves every infra-only pull request waiting forever for a
 status that is never coming. It is the same trap `paths-ignore` sets. The `gate`
 job above always runs, so it can be required without deadlocking anything.
 
-**Check what your release tooling does with the title.** Under squash merging
-the title becomes the commit subject. Anything deriving a version from
-Conventional Commits anchors its patterns at `^`, so `[INFRA] feat(x): y`
-matches nothing and the release is silently skipped. Strip the tag first — this
-repository does it in `.github/scripts/next-version.sh`, with tests.
+**Rules are regexes, so anchor them.** `^web/` matches the `web` directory;
+`web/` would also match `vendor/web/`. There are tests for exactly this.
 
 ## Tests
 
@@ -81,32 +95,31 @@ repository does it in `.github/scripts/next-version.sh`, with tests.
 The logic lives in `route.sh` rather than inline in `action.yml`, so the tests
 exercise the script the action actually runs instead of a copy free to drift.
 Run it in CI — see this repository's `ci.yml`, where a `Pipeline self-test` job
-runs unconditionally, before any routing decision is acted on.
+runs unconditionally, outside the routing. You cannot use a routed pipeline to
+test the router: if it is broken it may route away from its own test.
 
 Worth the trouble because **a broken router fails green.** If it selects
 nothing, every pipeline is skipped, the aggregate gate sees nothing that failed,
 and the pull request passes having tested none of the change. So the cases weigh
-towards under-selection — unknown tags, near-misses, an empty title, an empty
-fallback — and towards the substring traps that would make it over-select
-(`[apple]` must not match a tag of `app`).
+towards under-selection — unclassified paths, an empty diff, misconfiguration —
+and towards anchoring mistakes that match the wrong directory.
 
-Writing them found one real bug: an empty title aborted the script rather than
-falling back, which would have failed a pull request over a title nobody typed.
+Writing them found two real bugs: a misconfigured call selected nothing instead
+of failing, and a composite action's `env:` always *sets* every variable, so
+"unset" could not be used to mean "derive from git".
 
 ## Behaviour
 
-| Title | Selected |
+| Changed files | Selected |
 | --- | --- |
-| `[APP] feat(feed): rank posts` | `["app"]` |
-| `[APP][INFRA] feat: both halves` | `["app","infra"]` |
-| `[infra] fix: lowercase works` | `["infra"]` |
-| `feat: no tag at all` | the `fallback` |
+| `web/app/models/user.rb` | `["app"]` |
+| `infra/terraform/eks.tf` | `["infra"]` |
+| `docs/roadmap.md` | `["docs"]` |
+| `web/…` and `infra/…` | `["app","infra"]` |
+| `.github/workflows/ci.yml` | `["app","infra"]` — a workflow can break either |
+| `Makefile` (matches nothing) | the `default` |
+| nothing at all | `[]` |
 
-Matching is case-insensitive and on the literal tag, so `[DOCS]` does **not**
-match a `doc` tag — it falls through to the fallback. That direction is
-deliberate: an unrecognised tag runs more than it needs to, never less.
-
-**The trade this accepts:** a title is a claim, while a diff is evidence. A pull
-request titled `[DOC]` that edits application code will skip that code's tests.
-If you would rather not accept that, route on changed paths instead — the parent
-and gate stay exactly as they are, and only the `route` job changes.
+Given neither `files` nor `base`/`head`, the action **fails** rather than
+selecting nothing. That direction is deliberate throughout: an empty selection
+is the one result that looks exactly like a pass.

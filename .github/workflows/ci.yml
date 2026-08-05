@@ -1,16 +1,17 @@
 name: CI
 
 # The parent pipeline. It decides which child pipelines a pull request needs and
-# calls them; it runs no checks of its own.
+# calls them; it runs no build of its own.
 #
-# The routing itself lives in .github/actions/pipeline-router, which is written
-# to be lifted into another project — see its README for the pattern and the two
-# traps that come with it.
+# GitHub has no parent/child pipelines as such. The equivalent is a reusable
+# workflow — `on: workflow_call` in the child, `uses:` in the parent — which
+# behaves like GitLab's `trigger` with `strategy: depend`: the calling job waits
+# for the child and can read its outputs.
+#
+# Routing is by changed path, which is the convention GitHub repositories
+# settled on. The rules live in the `route` job below.
 on:
   pull_request:
-    # `edited` matters: without it, a pull request opened as [DOC] and retitled
-    # to [APP] would keep the checks it got the first time round.
-    types: [opened, synchronize, reopened, edited]
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -20,42 +21,66 @@ permissions:
   contents: read
 
 jobs:
-  # The pipeline's own smoke test, and never routed around — routing decides
-  # which checks a pull request gets, so a broken router is the one failure that
-  # can make a pull request green by testing nothing at all. Every pipeline is
-  # skipped, the gate sees nothing that failed, and it reads as a pass.
-  #
-  # next-version.sh is tested here too. Its suite existed and had never run in
-  # CI: the script that decides every release version was guarded only by
-  # someone remembering to run it, and it has shipped a wrong tag twice.
+  # The pipeline's own checks, and never routed around — routing decides which
+  # checks a pull request gets, so a broken router is the one failure that can
+  # make a pull request green by testing nothing at all. Every pipeline skips,
+  # the gate sees nothing that failed, and it reads as a pass. You cannot use a
+  # routed pipeline to test the router, so this sits outside the routing.
   selftest:
     name: Pipeline self-test
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
+
+      # Catches what a YAML parser cannot: expression injection, invalid
+      # `needs:` references, deprecated syntax — and it runs shellcheck over
+      # every `run:` block, so the bash in these workflows is linted too.
+      - name: actionlint
+        uses: raven-actions/actionlint@v2
+        with:
+          shellcheck: true
 
       - name: Router
         run: .github/actions/pipeline-router/test-route.sh
 
+      # These tests existed and had never run in CI: the script that derives
+      # every release version was guarded only by someone remembering to run it,
+      # and it has shipped a wrong tag twice.
       - name: Version derivation
         run: .github/scripts/test-next-version.sh
 
   route:
     name: Route
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       selected: ${{ steps.route.outputs.selected }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Both ends of the comparison have to be present locally.
+          fetch-depth: 0
 
       - uses: ./.github/actions/pipeline-router
         id: route
         with:
-          title: ${{ github.event.pull_request.title }}
-          tags: app infra doc
-          # Every pipeline, so an untagged pull request is over-checked rather
-          # than waved through.
-          fallback: app infra
+          base: ${{ github.event.pull_request.base.sha }}
+          head: ${{ github.event.pull_request.head.sha }}
+          # A workflow change selects app and infra because it can break either
+          # pipeline. Documentation selects neither.
+          rules: |
+            app:^web/
+            app:^\.github/
+            infra:^infra/
+            infra:^\.github/
+            docs:^docs/
+            docs:\.md$
+            docs:^LICENSE$
+          # What an unclassified file pulls in. Naming both is deliberate: a
+          # path nobody anticipated gets checked rather than slipping through,
+          # so the failure mode is running too much, never too little.
+          default: app infra
 
   app:
     name: App
@@ -94,7 +119,7 @@ jobs:
   #
   # A reusable workflow that is never called contributes no check runs at all —
   # the same trap `paths-ignore` sets. Requiring `App / Lint` would deadlock
-  # every [INFRA] pull request on a status that is never coming.
+  # every infrastructure-only pull request on a status that is never coming.
   #
   # This job always runs, so it always reports, and it is red if any pipeline
   # that did run came back red.
@@ -103,6 +128,7 @@ jobs:
     needs: [selftest, route, app, infra, security]
     if: always()
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Fail if any pipeline that ran did not pass
         env:
