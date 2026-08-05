@@ -212,14 +212,29 @@ scope expansion to raise with the user, not a default.
 
 **Current focus: infrastructure (I-1), local-first.** There will never be a real AWS
 account: the enterprise AWS architecture (EKS, ALB, Multi-AZ RDS, S3) is the *reference
-design*, realized entirely locally — Terraform against a local AWS emulator, k3s standing in
-for EKS. The design and the diagram are in `docs/infrastructure.md` and
-`docs/diagrams/aws-reference-architecture.drawio`, sequenced as I-1a through I-1e in
-`docs/roadmap.md`. The emulator is floci (floci.io) — free, MIT, its EKS emulation runs
-real k3s clusters. No Terraform until I-1a's toolchain verification is done; no real cloud
-resources, ever. Deploying will force
-three app changes — Postgres, shared cache, S3 media — recorded in the design doc, to be
-made when they block, not before.
+design*, realized entirely locally. The design and the diagram are in
+`docs/infrastructure.md` and `docs/diagrams/aws-reference-architecture.drawio`, sequenced in
+`docs/roadmap.md`.
+
+**The work is two independent tracks — [ADR 0008](docs/adr/0008-terraform-verifies-runtime-deploys.md).**
+
+- **Track A, Terraform (taken first).** The reference design written as Terraform and applied
+  against floci, a local AWS emulator. This proves the config stands up; it never runs the
+  app. One root, no modules, files split by concern. Terraform stops at AWS — Kubernetes
+  objects stay as manifests. `terraform apply` against a clean emulator becomes a CI gate.
+- **Track B, runtime.** A real local Kubernetes cluster (k3d) running the app, and where load
+  and stress testing happen. Real PostgreSQL, real object storage, real ingress. Nothing here
+  depends on floci.
+
+Why split: floci runs real engines for a few services (EKS→k3s, RDS→PostgreSQL) and answers
+the API while doing nothing for the rest — including the whole network and both load
+balancers. Betting the deployment on the first tier being deep enough is the risk the split
+removes. It costs a single end-to-end demo, and leaves two descriptions of the cluster that
+can drift; keep manifests cluster-agnostic.
+
+No Terraform until I-1a's remaining toolchain questions in `docs/floci.md` are answered; no
+real cloud resources, ever. Deploying will force three app changes — Postgres, shared cache,
+S3 media — recorded in the design doc, to be made when they block, not before.
 
 Anything outside the current milestone — follows, notifications, account deletion — is later.
 If a task seems to require one of them, say so and ask rather than expanding scope.

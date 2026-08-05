@@ -90,12 +90,37 @@ catch. The measurement harness is a separate, larger piece.
 ## Infrastructure
 
 The design is in [`infrastructure.md`](infrastructure.md): the enterprise AWS architecture
-as the reference, realized entirely locally on [floci](https://floci.io/floci/) — a free,
-MIT-licensed AWS emulator whose EKS emulation runs real k3s clusters. The earlier questions
-about an AWS account, budget and domain name are answered by the premise — there will never
-be a real account, so nothing bills and TLS terminates against a local hostname. Whether
-floci's emulation is deep enough for each service in the design is not an open question but
-I-1a's verification work.
+as the reference, realized entirely locally. The earlier questions about an AWS account,
+budget and domain name are answered by the premise — there will never be a real account, so
+nothing bills and TLS terminates against a local hostname.
+
+Whether floci's emulation is deep enough is no longer the load-bearing question it was.
+[ADR 0008](adr/0008-terraform-verifies-runtime-deploys.md) splits the work in two: floci
+verifies that the Terraform stands up, and a real local Kubernetes cluster runs the app. So
+emulation depth now only has to be good enough to apply resources, not to serve traffic.
+Also settled there: no Terraform modules, Terraform stops at AWS with Kubernetes objects as
+manifests, and images come from GHCR rather than the emulated ECR.
+
+### Which local Kubernetes distribution for the runtime track?
+
+ADR 0008 names k3d as the likely choice — it is k3s in Docker, so it matches what floci's
+EKS emulation would have launched anyway, and it ships Traefik and ServiceLB. kind and
+minikube are the alternatives.
+
+**Why it matters:** it decides what the manifests are exercised against, and how node
+scaling and zone-loss rescheduling get demonstrated in I-1f.
+
+**When:** at the start of track B (I-1d). Nothing before then depends on it.
+
+### What provides S3-compatible storage on the runtime track?
+
+MinIO is the obvious candidate. Active Storage needs an S3-compatible endpoint, and the
+`aws-sdk-s3` gem plus a `storage.yml` service is the app-side change either way.
+
+**Why it matters:** it is one of the three app changes deploying forces, and it is the one
+with no local default the way PostgreSQL has.
+
+**When:** I-1e, when the app first needs somewhere to put an avatar that survives a redeploy.
 
 ### Shared cache: Solid Cache or Redis?
 
@@ -106,7 +131,8 @@ be wanted for Sidekiq eventually anyway.
 **Why it matters:** picking Solid Cache now and Redis later means doing the work twice;
 picking Redis now adds a service before anything needs it.
 
-**When:** the moment the deployment scales past one replica — during I-1c or I-1d.
+**When:** the moment the deployment scales past one replica — during I-1e or I-1f, on the
+runtime track.
 
 ---
 

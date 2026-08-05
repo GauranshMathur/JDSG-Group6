@@ -26,6 +26,38 @@ editor. The SVG above is not exported by hand: the `render-diagrams` workflow re
 it on every push to `main` that changes the `.drawio`, so the picture follows the source
 (see [`ci-cd.md`](ci-cd.md)).
 
+## Two tracks, not one
+
+**Decided in [ADR 0008](adr/0008-terraform-verifies-runtime-deploys.md).** The Terraform and
+the running app are separate exercises that do not depend on each other:
+
+| | Terraform + floci | Local Kubernetes + manifests |
+| --- | --- | --- |
+| Purpose | Prove the infrastructure-as-code stands up | Actually run the app |
+| Proves | The resource graph is coherent, dependencies resolve, nothing reaches a missing API | The app serves; load, stress and latency behaviour |
+| Runs the app | Never | Yes |
+| Backing services | Emulated, metadata-shaped | Real PostgreSQL, real object storage, real ingress |
+| Where it runs | CI, on any pull request touching `infra/` | Locally, on demand |
+
+The reason is that floci's emulation is two-tiered — a handful of services run real engines
+in Docker, and everything else answers the API while doing nothing. Betting the deployment
+on the first tier being deep enough is the risk this split removes. It costs a single
+"`terraform apply` and the app is live" demonstration, and it leaves two descriptions of the
+cluster that can drift; the mitigation is keeping the manifests cluster-agnostic. The full
+reasoning and the costs are in the ADR.
+
+Shape of the Terraform, settled at the same time:
+
+- **No modules.** One root, files split by concern. There is one of everything, and floci
+  has no region isolation, so even the DR region never becomes a second instantiation.
+- **Terraform stops at AWS.** Kubernetes objects stay as manifests, later reconciled by
+  Flux — the Kubernetes provider cannot plan against a cluster that does not exist yet.
+- **Images come from GHCR**, which the release workflow already publishes to. This gives up
+  floci's automatic ECR-to-k3s `registries.yaml` wiring, so the cluster needs working egress
+  and a pull secret if the package is not public.
+- **Inert resources are applied and labelled**, so the Terraform matches the diagram without
+  anyone mistaking a Web ACL in the state file for something that filters.
+
 ## Toolchain
 
 | Piece | Tool | Note |
@@ -65,8 +97,10 @@ and EBS) sit at this layer too, since they are global services everything else l
 path — created and kept in sync by the AWS Load Balancer Controller *from* the Kubernetes
 `Ingress` resource, TLS from ACM — and an **NLB** is the L4 path (TLS passthrough,
 non-HTTP), which fronts the in-cluster ingress controller. The local realization uses the
-NLB-shaped path: Traefik in k3s plays the ingress controller, since floci emulates neither
-load balancer.
+NLB-shaped path: Traefik in k3s plays the ingress controller. floci emulates both load
+balancers at the API level, so both appear in the Terraform, but neither forwards a packet
+— see [`floci.md`](floci.md). The NLB's job is the one that survives locally, because k3s's
+ServiceLB does real L4.
 
 **Inside the cluster** (private subnets, two AZs, an EKS managed node group per zone):
 the Kubernetes objects are drawn explicitly — the ingress controller, the `Ingress` rule
@@ -130,13 +164,17 @@ dead database, which is exactly wrong for a load balancer).
 
 ## Sequencing
 
-| Step | What exists at the end |
-| --- | --- |
-| I-1a | This design agreed; the reference diagram; toolchain verified (can Terraform actually stand up the emulated EKS? — the floci/licence question answers itself here) |
-| I-1b | The platform: cluster up via Terraform, ingress, Postgres, S3-compatible storage |
-| I-1c | The app served on it: image pulled, migrations run, `/up` green behind ingress — with the three app changes above made as they block |
-| I-1d | Resiliency demonstrated: HPA, node scaling, drains, zone-loss rescheduling |
-| I-1e | Load and latency testing, and the improvement loop it feeds |
+Track A is taken first, but after I-1a the two tracks do not depend on each other.
+
+| Step | Track | What exists at the end |
+| --- | --- | --- |
+| I-1a | — | This design agreed; the reference diagram; the remaining toolchain questions in [`floci.md`](floci.md) answered |
+| I-1b | A | The reference design written as Terraform: VPC, EKS, RDS, S3, ECR, IAM, SSM and the edge chain. One root, no modules |
+| I-1c | A | `terraform apply` against a clean floci succeeds, and is a CI gate on any pull request touching `infra/` |
+| I-1d | B | Local cluster and platform: k3d, Traefik ingress, real PostgreSQL, S3-compatible object storage |
+| I-1e | B | The app served on it: image pulled, migrations run, `/up` green behind ingress — with the three app changes above made as they block |
+| I-1f | B | Resiliency demonstrated: HPA, node scaling, drains, zone-loss rescheduling |
+| I-1g | B | Load and latency testing, and the improvement loop it feeds |
 
 The standing rule adapts rather than dies: **no real cloud resources, ever** — and no
-Terraform until I-1a's design is agreed and the toolchain question is answered.
+Terraform until I-1a's design is agreed and the toolchain questions are answered.
