@@ -149,13 +149,17 @@ the release will ship it.
 **When:** now. This is configuration rather than work — see N-4.2 and N-4.2a in
 [`REQUIREMENTS.md`](../REQUIREMENTS.md).
 
-**One trap when enabling them.** The checks to require are the six job names — `Detect
-changes`, `Lint`, `Test`, `SAST`, `Container build, image scan and DAST`, `SonarQube` — all of
-which report `skipped` rather than nothing when gated off, which satisfies a requirement.
-`Trivy` is *not* a job: it is a code-scanning check created by the SARIF upload. It now reports
-on every pull request, but only because the filesystem scan uploads from the SAST job, which is
-never skipped. If that upload is ever removed, requiring `Trivy` would leave every docs-only
-pull request waiting forever.
+**Require exactly one check: `CI`.** Since the pipelines became parent and child workflows,
+requiring the individual jobs would deadlock. A reusable workflow that is never called
+contributes no check runs at all, so requiring `App / Lint` would leave every
+infrastructure-only pull request waiting forever for a status that is never coming — the
+same trap `paths-ignore` sets. `ci.yml`'s `CI` job exists for this: it always runs, `needs` every child, and is red if
+any pipeline that ran came back red. See [`ci-cd.md`](ci-cd.md).
+
+`Trivy` is *not* a job either — it is a code-scanning check created by the SARIF upload. It
+reports on every pull request only because the filesystem scan uploads from the security
+pipeline, which is never routed around. If that upload were ever removed, requiring `Trivy`
+would hang every pull request that skips the container build.
 
 ### Should the DAST scan fail the build?
 

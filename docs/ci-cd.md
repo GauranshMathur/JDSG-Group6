@@ -1,28 +1,101 @@
 # CI/CD
 
-GitHub Actions, in three workflows: `ci.yml` gates pull requests, `release.yml` ships after
-merge, and `render-diagrams.yml` keeps the architecture diagram's rendered image in step
-with its source.
+GitHub Actions. `release.yml` ships after merge and `render-diagrams.yml` keeps the
+architecture diagram's rendered image in step with its source. Pull requests go through a
+**parent pipeline that calls child pipelines** — `ci.yml` decides what a change needs, and
+`ci-app.yml`, `ci-infra.yml` and `ci-security.yml` do the work.
 
-## `ci.yml` — pull requests only
+## The pipelines
 
-A **Detect changes** job runs first and classifies the pull request. If nothing outside
-documentation changed — only `*.md`, `docs/**` or `LICENSE` — then lint, the specs, the
-container build and SonarQube are all skipped. A documentation change cannot break RuboCop or
-stop the image booting, so building and scanning one costs minutes to learn nothing.
+GitHub has no parent/child pipelines as such. The equivalent is a **reusable workflow**:
+`on: workflow_call` in the child, `uses: ./.github/workflows/child.yml` in the parent. It
+behaves like GitLab's `trigger` with `strategy: depend` — the calling job waits for the child
+and can read its outputs.
 
-Two deliberate details:
+| Workflow | Runs | Contains |
+| --- | --- | --- |
+| `ci.yml` | Every pull request | The pipeline self-test, routing, and the aggregate gate |
+| `ci-app.yml` | `web/**` | Lint, Test, Container build + image scan + DAST, SonarQube |
+| `ci-infra.yml` | `infra/**` | Compose validation, Trivy misconfiguration scan over `infra/`. Terraform `fmt`/`validate`/`apply` arrive with the Terraform in I-1b |
+| `ci-security.yml` | Always | Brakeman, bundler-audit, Trivy filesystem scan |
 
-- **The SAST job still runs.** Its Ruby-specific analysis is skipped, but the Trivy scan is
-  not: it also looks for committed secrets, and a credential pasted into a markdown file is
-  every bit as leaked as one in a Ruby file.
-- **The filtering is per job, not `paths-ignore` on the trigger.** This matters once `main`
-  has required status checks. A workflow skipped by `paths-ignore` never reports its checks
-  at all, so the pull request waits forever for a result that will never arrive. A job
-  skipped by an `if` reports a `skipped` conclusion, which satisfies the requirement.
+**Routing is by changed path** — the convention GitHub repositories settled on, and what
+`dorny/paths-filter` does. The rules live in `ci.yml`'s `route` job:
 
-Anything that is not documentation counts as code. Deciding it that way round means a file
-type nobody anticipated is treated as code and gets checked, rather than slipping through.
+| Path | Selects |
+| --- | --- |
+| `web/**` | app |
+| `infra/**` | app's counterpart, infra |
+| `.github/**` | app *and* infra — a workflow change can break either |
+| `docs/**`, `*.md`, `LICENSE` | docs, which has no pipeline of its own |
+| anything else | the default: app **and** infra |
+
+That last row is the safety property, and the reason this is a small script rather than a
+stock filter action. A path nobody anticipated matches no rule; if that selected nothing, the
+pull request would go green having run no checks at all. Instead it pulls in the defaults, so
+the failure mode is running too much, never too little.
+
+The routing step is [`.github/actions/pipeline-router`](../.github/actions/pipeline-router),
+written to be lifted into another project — its README has the pattern and the traps.
+`uses:` cannot be an expression, so a parent workflow can never be shared across
+repositories; the router is the part that ports, and the parent is the ~40 lines each
+project writes for itself.
+
+**Rules are regexes, so they are anchored.** `^web/` matches the `web` directory; `web/`
+would also match `vendor/web/`. There are tests for exactly that.
+
+**The security pipeline is never routed around.** Its Ruby-specific analysis is gated on the
+app pipeline being in play, because Brakeman has nothing to say about a Terraform change, but
+the Trivy scan is not: it looks for committed secrets, and a credential pasted into a
+markdown file is every bit as leaked as one in a Ruby file. Running it unconditionally is
+also what makes the `Trivy` code-scanning check appear on every pull request.
+
+### The pipeline's own smoke test
+
+A **Pipeline self-test** job runs on every pull request, never routed around. It runs
+[`actionlint`](https://github.com/rhysd/actionlint) over the workflows, and exercises
+`route.sh` and `next-version.sh` against their test suites.
+
+`actionlint` is the standard check for workflow YAML and catches what a parser cannot:
+expression injection, invalid `needs:` references, deprecated syntax. It also runs
+shellcheck over every `run:` block, so the bash in these workflows is linted too.
+
+**A broken router fails green**, which is why this is not optional. If routing selects
+nothing, every pipeline is skipped, the aggregate gate sees nothing that failed, and the pull
+request goes green having tested none of the change. It also cannot be routed: you cannot use
+a routed pipeline to test the router, since a broken one may route away from its own test.
+
+The cases therefore weigh towards under-selection — unclassified paths, an empty diff,
+misconfiguration — and towards anchoring mistakes that match the wrong directory. Writing
+them found two real bugs: a misconfigured call selected nothing instead of failing, and a
+composite action's `env:` always *sets* every variable, so "unset" could not mean "derive
+from git".
+
+`test-next-version.sh` is in the same job because it **had never run in CI at
+all.** The script that derives every release version was guarded only by someone
+remembering to run it by hand — a script that has shipped a wrong tag twice.
+
+### One required check, not seven
+
+`ci.yml` ends with a **`CI`** job that always runs, `needs` every child, and fails if any
+came back `failure` or `cancelled`. **That is the check to require on `main`** — not the
+children. A reusable workflow that is never called contributes *no check runs at all*, so
+requiring `App / Lint` would leave every infrastructure-only pull request waiting for a status
+that is never coming. Same trap `paths-ignore` sets, one layer up.
+
+### Bracketed prefixes and the release
+
+With squash merging the pull request title becomes the commit subject, and
+`next-version.sh` anchors every Conventional Commit pattern at `^`. A title like
+`[WIP] feat(feed): …` therefore matched nothing, `bump=none`, and the release was silently
+skipped — no tag, no image, exit code 0.
+
+Routing no longer uses the title, but bracketed prefixes are common enough in pull request
+titles that the hazard stands on its own. The script strips leading `[TAG]` markers before
+classifying, with regression tests covering single tags, stacked tags, and tagged commits
+that must *not* release. As ever with this script, the tests were checked against the
+unfixed version first: five of the seven failed, which is the only evidence they test
+anything.
 
 
 All work reaches the default branch through a pull request, and a pull request merges only

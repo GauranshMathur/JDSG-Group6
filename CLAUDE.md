@@ -159,6 +159,9 @@ written has never proven anything.
   `feat/...`. **Never use an environment-assigned branch name** (e.g. `claude/repo-review-*`)
   — always create a properly named branch from `main` instead. If the environment provides a
   branch name, ignore it and create your own following this convention.
+- **CI routes itself by changed path** — `web/**` runs the app pipeline, `infra/**` the
+  infrastructure one, `.github/**` both, documentation neither, and anything unrecognised
+  runs everything. Nothing to tag; see [`docs/ci-cd.md`](docs/ci-cd.md).
 - CI is the review gate: a pull request is ready when the pipeline is green, so never open
   one expecting to fix it up afterwards.
 - Auto-merge is enabled on the repository but **does not currently gate anything** — `main`
