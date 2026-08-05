@@ -26,13 +26,30 @@ on a single branch.
 Tracked separately from app milestones. These are not sequenced against the app work — they
 can proceed in parallel once the design is agreed.
 
+**Two tracks, decided in [ADR 0008](adr/0008-terraform-verifies-runtime-deploys.md).** The
+Terraform proves the design stands up, against the emulator; a real local Kubernetes cluster
+runs the app and is where load and stress testing happen. They do not depend on each other,
+so after I-1a they can proceed in either order or in parallel.
+
 | # | Milestone | Status |
 | --- | --- | --- |
-| I-1a | Design + reference diagram + toolchain verified (can Terraform stand up the emulated EKS?) | In progress — design in [`infrastructure.md`](infrastructure.md) |
-| I-1b | Local platform: cluster via Terraform, ingress, PostgreSQL, S3-compatible storage | Planned |
-| I-1c | The app served on the platform, with the app changes it forces (Postgres, shared cache, S3 media) | Planned |
-| I-1d | Resiliency demonstrated: HPA, node scaling, drains, zone-loss rescheduling | Planned |
-| I-1e | Load testing, latency testing, and the improvement loop they feed | Planned |
+| I-1a | Design agreed, reference diagram, and the toolchain questions in [`floci.md`](floci.md) answered | In progress — design in [`infrastructure.md`](infrastructure.md), split recorded in [ADR 0008](adr/0008-terraform-verifies-runtime-deploys.md) |
+
+*Track A — Terraform (the design, verified).* Taken first.
+
+| # | Milestone | Status |
+| --- | --- | --- |
+| I-1b | The reference design written as Terraform: VPC, EKS, RDS, S3, ECR, IAM, SSM, and the edge chain. One root, no modules | Planned |
+| I-1c | `terraform apply` against a clean floci succeeds, and is a CI gate on any pull request touching `infra/` | Planned |
+
+*Track B — Runtime (the app, actually running).*
+
+| # | Milestone | Status |
+| --- | --- | --- |
+| I-1d | Local cluster and platform: k3d, Traefik ingress, real PostgreSQL, S3-compatible object storage | Planned |
+| I-1e | The app served on it, with the three changes it forces — PostgreSQL, shared cache, S3 media | Planned |
+| I-1f | Resiliency demonstrated: HPA, node scaling, drains, zone-loss rescheduling | Planned |
+| I-1g | Load testing, latency testing, and the improvement loop they feed | Planned |
 
 **The direction changed after the first proposal:** there will never be a real AWS account.
 The AWS architecture (EKS, ALB, Multi-AZ RDS, S3 — the full enterprise shape) is the

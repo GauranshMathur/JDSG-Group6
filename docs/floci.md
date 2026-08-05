@@ -100,35 +100,82 @@ forces:
 
 | Reference design piece | floci reality | Our move |
 | --- | --- | --- |
-| **ALB as the only ingress** | **ELB/ALB is not emulated at all** | Ingress runs at the Kubernetes layer instead: k3s ships Traefik + ServiceLB. The ALB stays in the reference diagram; locally, Traefik plays its part |
+| **ALB as the only ingress** | Emulated, but **in-process**: `aws_lb` creates, describes and returns a DNS name; nothing forwards a packet | Ingress runs at the Kubernetes layer instead: k3s ships Traefik + ServiceLB. The ALB stays in the reference diagram *and in the Terraform*; locally, Traefik plays its part |
+| **NLB** as the L4 path | Same tier as the ALB — API only | This is the half that survives: k3s's ServiceLB (klipper-lb) does real L4, so a `Service` of type `LoadBalancer` genuinely gets a host port. The NLB's *job* is realized locally; it is just realized by k3s, not by floci |
 | EKS **managed node groups** ×2 AZs, cluster autoscaler | Node groups are API metadata; one k3s container is the cluster; no ASG integration | Multi-node and node-scaling demos happen at the k3s layer — joining/removing k3s agent containers — not through the EKS API. Zone labels are ours to fake |
-| **RDS Multi-AZ** primary + standby | Real PostgreSQL 16 container behind an auth proxy (ports 7000–7099) — but no Multi-AZ, failover, or read replicas | Accept a single Postgres for the platform, and if we want the failover *demonstration*, run it in-cluster with an operator (CloudNativePG) as a separate exercise |
-| ACM certificate on the ALB | No ALB to attach it to | TLS terminates at Traefik with a locally-issued cert, or is accepted as HTTP locally |
+| **RDS Multi-AZ** primary + standby | Real PostgreSQL 16 container behind an auth proxy (ports 7000–7099) — but no Multi-AZ, failover, or read replicas | Not used at all under [ADR 0008](adr/0008-terraform-verifies-runtime-deploys.md): the app runs against a real PostgreSQL on the local cluster, not against floci's. The RDS resources stay in the Terraform as design |
+| ACM certificate on the ALB | ACM is emulated (issuance and validation lifecycle), and so is the ALB — but attaching one to the other changes nothing observable | TLS terminates at Traefik with a locally-issued cert, or is accepted as HTTP locally |
+| **Network Firewall** for egress inspection | **Not among the 69 services** — this one genuinely does not exist | The only resource that cannot be applied. Stays as a commented block with a note, so the Terraform still records the design |
 | CloudWatch dashboards/alarms | Logs/metrics APIs accept writes | Real observability, if we want it, is Prometheus + Grafana in-cluster (already the plan) |
+
+**A correction worth recording.** An earlier draft of this document said "ELB/ALB is not
+emulated at all," and `infrastructure.md` said floci "emulates neither load balancer". Both
+were wrong: the service list covers ELB v2 (ALB, NLB, target groups, listeners, routing
+rules), CloudFront, WAF v2, ACM, AWS Backup and Route 53. The practical conclusion did not
+change — Traefik still has to do the real ingress — but the *reason* did, and it matters for
+the Terraform. These resources apply cleanly; they simply do nothing once applied. Only
+Network Firewall is genuinely absent.
+
+## The three tiers that actually matter
+
+"Supported" is the wrong axis, because almost everything in the reference design is
+supported. What varies is whether the emulated thing *does* anything:
+
+| Tier | Resources | What `terraform apply` gives you |
+| --- | --- | --- |
+| **Does real work** | EKS (real k3s), RDS (real PostgreSQL), ElastiCache (real Redis), S3, ECR, SSM | A thing that functions — a Kubernetes API to `kubectl` into, a database to connect to |
+| **Applies, but inert** | VPC, subnets, security groups, NAT and internet gateways, ALB, NLB, CloudFront, WAF, ACM, Route 53, AWS Backup | State you can create, describe and tag. Nothing routes, filters, caches or enforces |
+| **Not there at all** | Network Firewall | An error that halts the apply |
+
+The inert tier is the large one, and it is not a defect — it is what an emulator is. It is
+still worth applying, because it makes the Terraform match the diagram and costs nothing;
+it just has to be labelled so nobody reads a Web ACL in the state file as something that
+filters traffic.
+
+The third tier matters more than its size suggests: **one unsupported resource halts the
+whole apply**, leaving everything created before it in state and everything after it
+unrun. That, rather than tidiness, is the real argument for keeping unsupported resources
+out of the applied path.
+
+There is a fourth failure mode with no tier of its own — **a supported service with an
+unsupported operation**. EKS is the example: cluster creation works, but add-ons, access
+entries, identity provider configs and encryption config do not. So `aws_eks_cluster`
+applies while `aws_eks_addon` fails.
 
 ## What can and can't be done — summary
 
-**Can:** apply real Terraform (AWS provider, v1.10+) against it; stand up an EKS cluster
-and get a live Kubernetes API you can `kubectl` and Helm into; run the app against a real
-PostgreSQL via the emulated RDS; store media in emulated S3; push/pull images through
-emulated ECR straight into the cluster; keep secrets in SSM; create the whole VPC skeleton
-so the Terraform matches the reference design; snapshot and restore emulator state; run it
-all in CI if wanted.
+**Can:** apply real Terraform (AWS provider, v1.10+) against it, covering essentially the
+whole reference design; stand up an EKS cluster and get a live Kubernetes API you can
+`kubectl` and Helm into; run a real PostgreSQL via the emulated RDS; store objects in
+emulated S3; push and pull images through emulated ECR straight into the cluster; keep
+secrets in SSM; create the whole VPC skeleton; snapshot and restore emulator state; run it
+all in CI.
 
-**Can't:** terminate TLS on an ALB (none exists); scale nodes through EKS node-group APIs;
-fail over a Multi-AZ RDS; enforce a security group; exercise real IAM edge cases, quotas,
-or throttling; prove anything about actual AWS behaviour under load or failure. Load and
-latency results measured on this stack describe *our app on local hardware* — valid for
-finding N+1s, cache problems and scaling cliffs in the app, not for capacity-planning real
-AWS.
+**Can't:** route a packet through a load balancer; enforce a security group; scale nodes
+through EKS node-group APIs; fail over a Multi-AZ RDS; apply a Network Firewall; exercise
+real IAM edge cases, quotas, or throttling; prove anything about actual AWS behaviour under
+load or failure.
+
+This is why [ADR 0008](adr/0008-terraform-verifies-runtime-deploys.md) splits the work:
+floci verifies that the Terraform stands up, and a real local Kubernetes cluster runs the
+app. Load and latency figures measured against the emulator would describe the emulator.
 
 ## To verify in I-1a — things the docs left unclear
 
+Narrowed by ADR 0008. The items about running the app on emulated services are gone, since
+the app no longer runs there; what remains is about the Terraform track:
+
 1. Does the standard `terraform-aws-modules/eks` module `apply` cleanly, or does it touch
    unsupported APIs (add-ons, access entries) that force a slimmer hand-rolled config?
-2. What does `kubectl get nodes` actually show, and can extra k3s agents be joined to
-   floci's cluster container for multi-node demos?
-3. Does Rails connect happily through the RDS auth proxy (`DATABASE_URL` at
-   `localhost:70xx`), including under migration load?
-4. Does Active Storage work against floci's S3 (presigned URLs, redirect mode)?
-5. How permissive is the emulated IAM — does IRSA-style scoping do anything at all?
+   Expect hand-rolled.
+2. Does an inert-tier resource — an `aws_lb`, a `aws_cloudfront_distribution`, a
+   `aws_wafv2_web_acl` — actually apply, or does "supported" turn out shallower than the
+   service list claims?
+3. What does floci return when an apply reaches an unimplemented operation: a clean error
+   Terraform can report, or something that looks like success?
+4. Does `FLOCI_SERVICES_EKS_MOCK=true` cover enough for the CI gate, so the Terraform job
+   needs no Docker socket?
+
+Moot under ADR 0008, kept only as curiosities: whether Rails connects through the RDS auth
+proxy, whether Active Storage works against floci's S3, and how permissive the emulated IAM
+is. The app meets real PostgreSQL and real object storage on the other track.
