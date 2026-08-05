@@ -109,11 +109,14 @@ jobs:
           sarif_file: trivy-image.sarif
           category: trivy-image
 
+      # The command substitution is quoted (SC2046). `openssl rand -hex` emits
+      # no whitespace, so nothing splits today — but an unquoted substitution
+      # feeding a secret into a container is a habit worth not having.
       - name: Start the container
         run: |
           docker run -d --name web -p 3000:80 \
             -e RAILS_ENV=production \
-            -e SECRET_KEY_BASE=$(openssl rand -hex 64) \
+            -e SECRET_KEY_BASE="$(openssl rand -hex 64)" \
             -e RAILS_LOG_TO_STDOUT=1 \
             twitter-clone-web:${{ github.sha }}
 
