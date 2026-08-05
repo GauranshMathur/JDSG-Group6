@@ -72,6 +72,27 @@ Conventional Commits anchors its patterns at `^`, so `[INFRA] feat(x): y`
 matches nothing and the release is silently skipped. Strip the tag first — this
 repository does it in `.github/scripts/next-version.sh`, with tests.
 
+## Tests
+
+```bash
+.github/actions/pipeline-router/test-route.sh
+```
+
+The logic lives in `route.sh` rather than inline in `action.yml`, so the tests
+exercise the script the action actually runs instead of a copy free to drift.
+Run it in CI — see this repository's `ci.yml`, where a `Pipeline self-test` job
+runs unconditionally, before any routing decision is acted on.
+
+Worth the trouble because **a broken router fails green.** If it selects
+nothing, every pipeline is skipped, the aggregate gate sees nothing that failed,
+and the pull request passes having tested none of the change. So the cases weigh
+towards under-selection — unknown tags, near-misses, an empty title, an empty
+fallback — and towards the substring traps that would make it over-select
+(`[apple]` must not match a tag of `app`).
+
+Writing them found one real bug: an empty title aborted the script rather than
+falling back, which would have failed a pull request over a title nobody typed.
+
 ## Behaviour
 
 | Title | Selected |

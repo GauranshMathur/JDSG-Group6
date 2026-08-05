@@ -33,35 +33,12 @@ runs:
       # The title is attacker-controlled — anyone able to open a pull request
       # chooses it — so it arrives through the environment. Interpolating
       # ${{ inputs.title }} into the script would be a shell injection.
+      #
+      # The logic is in route.sh rather than inline here so that test-route.sh
+      # exercises the script this action actually runs, instead of a copy free
+      # to drift from it.
       env:
         TITLE: ${{ inputs.title }}
         TAGS: ${{ inputs.tags }}
         FALLBACK: ${{ inputs.fallback }}
-      run: |
-        set -euo pipefail
-
-        selected=()
-        for tag in ${TAGS//,/ }; do
-          # -F so a tag is a literal string rather than a pattern, and -i so
-          # [infra] and [INFRA] both match.
-          if grep -qiF "[$tag]" <<< "$TITLE"; then
-            selected+=("$tag")
-          fi
-        done
-
-        if [ ${#selected[@]} -eq 0 ] && [ -n "${FALLBACK// /}" ]; then
-          echo "::warning::No pipeline tag in the title — falling back to: $FALLBACK. Tag the title to route it."
-          for tag in ${FALLBACK//,/ }; do
-            selected+=("$tag")
-          done
-        fi
-
-        if [ ${#selected[@]} -eq 0 ]; then
-          json='[]'
-        else
-          json=$(printf '%s\n' "${selected[@]}" | jq -Rsc 'split("\n") | map(select(length > 0))')
-        fi
-
-        echo "selected=$json" >> "$GITHUB_OUTPUT"
-        echo "::notice::Title: $TITLE"
-        echo "::notice::Pipelines selected: $json"
+      run: ${{ github.action_path }}/route.sh

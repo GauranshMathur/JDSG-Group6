@@ -14,7 +14,7 @@ and can read its outputs.
 
 | Workflow | Runs | Contains |
 | --- | --- | --- |
-| `ci.yml` | Every pull request | Routing and the aggregate gate. No checks of its own |
+| `ci.yml` | Every pull request | The pipeline self-test, routing, and the aggregate gate |
 | `ci-app.yml` | `[APP]` | Lint, Test, Container build + image scan + DAST, SonarQube |
 | `ci-infra.yml` | `[INFRA]` | Compose validation, Trivy misconfiguration scan over `infra/`. Terraform `fmt`/`validate`/`apply` arrive with the Terraform in I-1b |
 | `ci-security.yml` | Always | Brakeman, bundler-audit, Trivy filesystem scan |
@@ -39,6 +39,23 @@ deriving it from changed paths, and the reason an untagged title runs everything
 not: it looks for committed secrets, and a credential pasted into a markdown file is every
 bit as leaked as one in a Ruby file. Running it unconditionally is also what makes the
 `Trivy` code-scanning check appear on every pull request.
+
+### The pipeline's own smoke test
+
+A **Pipeline self-test** job runs on every pull request, never routed around,
+exercising `route.sh` and `next-version.sh` against their test suites.
+
+**A broken router fails green**, which is why this is not optional. If routing
+selects nothing, every pipeline is skipped, the aggregate gate sees nothing that
+failed, and the pull request goes green having tested none of the change. The
+router's cases therefore weigh towards under-selection — unknown tags,
+near-misses, an empty title — and towards the substring traps that would make it
+over-select. Writing them found a real bug: an empty title aborted the script
+rather than falling back.
+
+`test-next-version.sh` is in the same job because it **had never run in CI at
+all.** The script that derives every release version was guarded only by someone
+remembering to run it by hand — a script that has shipped a wrong tag twice.
 
 ### One required check, not seven
 

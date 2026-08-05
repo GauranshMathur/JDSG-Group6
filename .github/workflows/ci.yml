@@ -20,6 +20,26 @@ permissions:
   contents: read
 
 jobs:
+  # The pipeline's own smoke test, and never routed around — routing decides
+  # which checks a pull request gets, so a broken router is the one failure that
+  # can make a pull request green by testing nothing at all. Every pipeline is
+  # skipped, the gate sees nothing that failed, and it reads as a pass.
+  #
+  # next-version.sh is tested here too. Its suite existed and had never run in
+  # CI: the script that decides every release version was guarded only by
+  # someone remembering to run it, and it has shipped a wrong tag twice.
+  selftest:
+    name: Pipeline self-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Router
+        run: .github/actions/pipeline-router/test-route.sh
+
+      - name: Version derivation
+        run: .github/scripts/test-next-version.sh
+
   route:
     name: Route
     runs-on: ubuntu-latest
@@ -80,7 +100,7 @@ jobs:
   # that did run came back red.
   gate:
     name: CI
-    needs: [route, app, infra, security]
+    needs: [selftest, route, app, infra, security]
     if: always()
     runs-on: ubuntu-latest
     steps:
