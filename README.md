@@ -28,28 +28,20 @@ so that each document can be read on its own and changed without rewriting the r
 | [Database](docs/database.md) | SQLite today, and the switch to PostgreSQL |
 | [Latency](docs/latency.md) | How the app should degrade when the database is slow — planned, not built |
 | [CI/CD](docs/ci-cd.md) | The pipeline, versioning, and how releases are cut |
-| [Infrastructure](docs/infrastructure.md) | The AWS reference design, realized locally on floci + k3s |
-| [floci](docs/floci.md) | The local AWS emulator: how it works, and what can and can't be done with it |
 | [Open questions](docs/open-questions.md) | Decisions not yet taken — a live list, pruned as they are answered |
 | [Decision records](docs/adr/) | Why a choice was made, and what it cost |
 
 Contributor conventions live in [`CLAUDE.md`](CLAUDE.md) — layout rules, commit format,
 testing expectations and the things not to touch.
 
-## Architecture
+## Infrastructure
 
-The enterprise AWS reference design — realized entirely locally, since there will never be a
-real AWS account. The reasoning, layer by layer, is in
-[docs/infrastructure.md](docs/infrastructure.md).
+How this application is deployed lives in its own repository:
+**[JDSG-Group6-infra](https://github.com/GauranshMathur/JDSG-Group6-infra)** — the enterprise AWS reference design, realized entirely
+locally, with the Terraform and Kubernetes manifests that stand it up.
 
-![AWS reference architecture](docs/diagrams/aws-reference-architecture.svg)
-
-This image never goes stale: the source of truth is
-[`aws-reference-architecture.drawio`](docs/diagrams/aws-reference-architecture.drawio),
-editable online in
-[app.diagrams.net](https://app.diagrams.net/#HGauranshMathur%2FJDSG-Group6%2Fmain%2Fdocs%2Fdiagrams%2Faws-reference-architecture.drawio)
-straight from this repository, and a workflow re-renders the SVG on every push that changes
-it — see [CI/CD](docs/ci-cd.md).
+This repository does not describe its own deployment. The one thing that crosses the
+boundary is the container image: released here to GHCR, pulled there by the cluster.
 
 ## Tech stack
 
@@ -65,7 +57,6 @@ it — see [CI/CD](docs/ci-cd.md).
 | Testing | RSpec + FactoryBot | |
 | Linting | RuboCop (`rubocop-rails-omakase`) | |
 | Containerization | Docker | Multi-stage build, image published to GHCR by CI |
-| IaC | Terraform (planned) | TODO — see [infrastructure notes](docs/infrastructure.md) |
 | CI/CD | GitHub Actions | Lint, test, SAST, DAST, image scan — see [CI/CD](docs/ci-cd.md) |
 
 **Why Sidekiq over Solid Queue:** timeline fan-out is the workload that eventually dictates
@@ -89,10 +80,6 @@ JDSG-Group6/
 │   ├── spec/
 │   ├── Dockerfile
 │   └── Gemfile
-├── infra/                # Infrastructure as code and deployment config
-│   ├── terraform/        # AWS resources (TODO)
-│   ├── docker/           # Compose files for local dev
-│   └── README.md
 ├── .github/
 │   └── workflows/        # CI/CD pipelines
 ├── docs/                 # Everything that is not code
@@ -100,7 +87,6 @@ JDSG-Group6/
 │   ├── design-principles.md
 │   ├── database.md
 │   ├── ci-cd.md
-│   ├── infrastructure.md
 │   ├── open-questions.md
 │   └── adr/              # Decision records — why, and what it cost
 ├── CLAUDE.md             # Working agreements for AI-assisted development
@@ -110,11 +96,11 @@ JDSG-Group6/
 
 Naming rules:
 
-- Folder names are lowercase and hyphenated (`infra/terraform`, not `infra/Terraform`).
+- Folder names are lowercase and hyphenated.
 - The Rails app is `web/`, not `app/`, so that internal Rails paths read as
   `web/app/models/post.rb` rather than the confusing `app/app/models/post.rb`.
-- Everything that is not application code (Terraform, Compose, deploy scripts, runbooks)
-  belongs under `infra/`.
+- Everything that is not application code — Terraform, Compose, deploy scripts, runbooks —
+  belongs in [JDSG-Group6-infra](https://github.com/GauranshMathur/JDSG-Group6-infra), not here.
 - Prose belongs in `docs/`, not in the README. The README says what the project is and how to
   run it; anything longer earns its own file so it can be read and changed on its own.
 - A decision with a trade-off worth remembering gets an ADR in `docs/adr/`. A decision with
@@ -158,7 +144,7 @@ disappear when the container exits.
 
 **SSL is off by default**, which is what makes the above work over plain HTTP. Set
 `RAILS_ASSUME_SSL=true` and `RAILS_FORCE_SSL=true` when the app is deployed behind TLS —
-see the [infrastructure notes](docs/infrastructure.md).
+see the [infrastructure repository](https://github.com/GauranshMathur/JDSG-Group6-infra).
 
 Or build it yourself, from the repository root:
 
