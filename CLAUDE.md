@@ -23,7 +23,7 @@ Where things are written down:
 | `REQUIREMENTS.md` | Numbered requirements and whether each is met. Update the status when a requirement's state actually changes |
 | `docs/roadmap.md` | Milestones, what shipped, and the plan for the next ones |
 | `docs/design-principles.md` | The 90-9-1 rule, and ownership over visibility |
-| `docs/database.md`, `docs/ci-cd.md`, `docs/infrastructure.md` | The detail for each |
+| `docs/database.md`, `docs/ci-cd.md` | The detail for each |
 | `docs/latency.md` | How the app should degrade when the database is slow. Planned, not built — see N-6.x |
 | `docs/open-questions.md` | Decisions not yet taken, each with why it matters and when it is needed |
 | `docs/adr/` | Decision records — why a choice was made, and what it cost |
@@ -58,25 +58,24 @@ any individual convention below:
   lists only benefits is marketing — record what the choice cost.
 - `docs/open-questions.md` is a live list, not an append-only log. When work answers a
   question, delete it and move the answer into the document it belongs to.
-- Anything infrastructure-related is a **TODO** until the AWS design is agreed. Do not write
-  Terraform or create cloud resources without an explicit ask.
 
 ## Repository layout
 
 ```
 web/       Rails application — all app code
-infra/     Terraform, Docker Compose, deploy config
 docs/      Everything that is not code — roadmap, decisions, open questions
 .github/   CI/CD workflows
 ```
+
+Infrastructure is a separate repository: [JDSG-Group6-infra](https://github.com/GauranshMathur/JDSG-Group6-infra).
 
 Rules:
 
 - Application code goes in `web/`. Never at the repository root.
 - The Rails app lives at `web/`, so internal paths are `web/app/models/`, `web/config/`,
   `web/spec/`. Watch for this — a path like `app/models/post.rb` is wrong here.
-- Infra and deployment code goes in `infra/`. Never inside `web/`, with the exception of
-  `web/Dockerfile`, which stays next to the app it builds.
+- Infrastructure and deployment code does not belong in this repository at all, with the
+  exception of `web/Dockerfile`, which stays next to the app it builds.
 - Folder names: lowercase, hyphenated.
 
 ## Stack (decided)
@@ -159,9 +158,9 @@ written has never proven anything.
   `feat/...`. **Never use an environment-assigned branch name** (e.g. `claude/repo-review-*`)
   — always create a properly named branch from `main` instead. If the environment provides a
   branch name, ignore it and create your own following this convention.
-- **CI routes itself by changed path** — `web/**` runs the app pipeline, `infra/**` the
-  infrastructure one, `.github/**` both, documentation neither, and anything unrecognised
-  runs everything. Nothing to tag; see [`docs/ci-cd.md`](docs/ci-cd.md).
+- **CI is filtered by path on the trigger** — `ci.yml` runs for `web/**` and `.github/**`, so
+  a documentation-only pull request runs no application checks. `security.yml` runs on every
+  pull request regardless. See [`docs/ci-cd.md`](docs/ci-cd.md).
 - CI is the review gate: a pull request is ready when the pipeline is green, so never open
   one expecting to fix it up afterwards.
 - Auto-merge is enabled on the repository but **does not currently gate anything** — `main`
@@ -203,8 +202,7 @@ bin/rails console            # REPL
 script/smoke-test            # End-to-end checks over HTTP against localhost:3000
 
 # From repo root
-docker build -t twitter-clone-web web                     # Build the image
-docker compose -f infra/docker/docker-compose.yml up -d   # Postgres, only when switching off SQLite
+docker build -t twitter-clone-web web   # Build the image
 ```
 
 ## Current milestone
@@ -213,31 +211,24 @@ docker compose -f infra/docker/docker-compose.yml up -d   # Postgres, only when 
 tested and merged; there is no current or planned app milestone. New app features are a
 scope expansion to raise with the user, not a default.
 
-**Current focus: infrastructure (I-1), local-first.** There will never be a real AWS
-account: the enterprise AWS architecture (EKS, ALB, Multi-AZ RDS, S3) is the *reference
-design*, realized entirely locally. The design and the diagram are in
-`docs/infrastructure.md` and `docs/diagrams/aws-reference-architecture.drawio`, sequenced in
-`docs/roadmap.md`.
+**Infrastructure lives in its own repository.** [JDSG-Group6-infra](https://github.com/GauranshMathur/JDSG-Group6-infra) holds the AWS
+reference design, the Terraform, the Kubernetes manifests and the decisions behind them. This
+repository does not describe its own deployment; the one thing crossing the boundary is the
+container image, released here to GHCR and pulled there by the cluster.
 
-**The work is two independent tracks — [ADR 0008](docs/adr/0008-terraform-verifies-runtime-deploys.md).**
+**Three app changes are owed to that work**, recorded in the infrastructure repository's
+design doc and made **here**, when they block, not before:
 
-- **Track A, Terraform (taken first).** The reference design written as Terraform and applied
-  against floci, a local AWS emulator. This proves the config stands up; it never runs the
-  app. One root, no modules, files split by concern. Terraform stops at AWS — Kubernetes
-  objects stay as manifests. `terraform apply` against a clean emulator becomes a CI gate.
-- **Track B, runtime.** A real local Kubernetes cluster (k3d) running the app, and where load
-  and stress testing happen. Real PostgreSQL, real object storage, real ingress. Nothing here
-  depends on floci.
+- **SQLite → PostgreSQL.** The switch is `DATABASE_URL` by design but has never been proven —
+  no CI job has ever run the suite against PostgreSQL.
+- **Per-process cache → shared cache.** The ranked-feed cache and the sign-in rate limiter
+  live in `Rails.cache` memory. Two replicas means two divergent feeds and a rate limit that
+  counts half.
+- **Disk → S3 for Active Storage.** Pod filesystems are ephemeral; a redeploy deletes every
+  avatar.
 
-Why split: floci runs real engines for a few services (EKS→k3s, RDS→PostgreSQL) and answers
-the API while doing nothing for the rest — including the whole network and both load
-balancers. Betting the deployment on the first tier being deep enough is the risk the split
-removes. It costs a single end-to-end demo, and leaves two descriptions of the cluster that
-can drift; keep manifests cluster-agnostic.
-
-No Terraform until I-1a's remaining toolchain questions in `docs/floci.md` are answered; no
-real cloud resources, ever. Deploying will force three app changes — Postgres, shared cache,
-S3 media — recorded in the design doc, to be made when they block, not before.
+Do not write Terraform, Compose files or Kubernetes manifests here. If a task needs them, it
+belongs in the other repository, and the two land as separate pull requests.
 
 Anything outside the current milestone — follows, notifications, account deletion — is later.
 If a task seems to require one of them, say so and ask rather than expanding scope.
@@ -251,8 +242,6 @@ Two rules that carry forward:
 
 ## Things to leave alone
 
-- Never create real cloud resources — the deployment is local by design. Do not write
-  Terraform until the I-1a toolchain verification is done and the design agreed.
 - Releases publish to GHCR. Do not uncomment the ECR block in
   `.github/workflows/release.yml` until the ECR repository and the GitHub OIDC role
   actually exist.

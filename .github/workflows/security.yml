@@ -1,19 +1,24 @@
-name: Security pipeline
+name: Security
 
-# Called by ci.yml on every pull request, whatever changed. Routing may decide
-# which build runs; it does not get to decide whether the tree is scanned for
-# secrets.
+# Deliberately unfiltered, unlike ci.yml. Whatever a pull request changes, the
+# tree gets scanned for committed secrets — a credential pasted into a markdown
+# file is every bit as leaked as one in a Ruby file.
 #
-# The Ruby-specific analysis is the part that varies: Brakeman and bundler-audit
-# have nothing to say about a Terraform change, so the caller passes `ruby` to
-# turn them off.
+# It is also what makes the `Trivy` code-scanning check appear on every pull
+# request. That check is created by the SARIF upload rather than being a job, so
+# when the only upload lived in the container job, documentation-only pull
+# requests never created it and GitHub listed it as expected and waiting for a
+# status that was never coming. It read exactly like a job refusing to be
+# scheduled.
+#
+# Being unconditional also makes this the one check safe to require on main
+# while ci.yml is path-filtered — see docs/ci-cd.md.
 on:
-  workflow_call:
-    inputs:
-      ruby:
-        description: Run the Ruby-specific analysis (Brakeman, bundler-audit).
-        type: boolean
-        required: true
+  pull_request:
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -30,7 +35,6 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: ruby/setup-ruby@v1
-        if: inputs.ruby
         with:
           working-directory: web
           bundler-cache: true
@@ -38,13 +42,11 @@ jobs:
       # Rails-aware static analysis: SQL injection, mass assignment, unsafe
       # redirects, XSS.
       - name: Brakeman
-        if: inputs.ruby
         working-directory: web
         run: bundle exec brakeman --no-pager --format plain
 
       # Known CVEs in the locked gem versions.
       - name: Bundler Audit
-        if: inputs.ruby
         working-directory: web
         run: |
           bundle exec bundler-audit update
@@ -74,13 +76,12 @@ jobs:
           exit-code: "1"
 
       # The gating scan above only sets an exit code — its findings went nowhere.
-      # This second pass reports every severity into the Security tab, the same
-      # split the image scan uses: one scan decides pass or fail, the other is
-      # the record.
+      # This second pass reports every severity into the Security tab: one scan
+      # decides pass or fail, the other is the record.
       #
       # always(), so a failing gate publishes what it found rather than hiding
-      # it. A scan that fails the build without saying why is the least useful
-      # of the two halves.
+      # it. A scan that fails the build without saying why is the less useful
+      # half of the two.
       - name: Trivy filesystem scan (report all severities)
         if: always()
         uses: aquasecurity/trivy-action@v0.36.0
@@ -94,12 +95,6 @@ jobs:
           skip-dirs: web/vendor
           exit-code: "0"
 
-      # This pipeline is never routed around, so uploading here is also what
-      # makes the code-scanning check report on *every* pull request. Before
-      # this, the only upload was in the container job, which a documentation
-      # pull request skips — so the "Trivy" check was never created, and GitHub
-      # left it listed as expected and waiting for a status that was never
-      # coming.
       - name: Upload filesystem scan results
         if: always()
         uses: github/codeql-action/upload-sarif@v3

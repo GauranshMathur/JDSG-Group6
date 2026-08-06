@@ -89,50 +89,10 @@ catch. The measurement harness is a separate, larger piece.
 
 ## Infrastructure
 
-The design is in [`infrastructure.md`](infrastructure.md): the enterprise AWS architecture
-as the reference, realized entirely locally. The earlier questions about an AWS account,
-budget and domain name are answered by the premise — there will never be a real account, so
-nothing bills and TLS terminates against a local hostname.
-
-Whether floci's emulation is deep enough is no longer the load-bearing question it was.
-[ADR 0008](adr/0008-terraform-verifies-runtime-deploys.md) splits the work in two: floci
-verifies that the Terraform stands up, and a real local Kubernetes cluster runs the app. So
-emulation depth now only has to be good enough to apply resources, not to serve traffic.
-Also settled there: no Terraform modules, Terraform stops at AWS with Kubernetes objects as
-manifests, and images come from GHCR rather than the emulated ECR.
-
-### Which local Kubernetes distribution for the runtime track?
-
-ADR 0008 names k3d as the likely choice — it is k3s in Docker, so it matches what floci's
-EKS emulation would have launched anyway, and it ships Traefik and ServiceLB. kind and
-minikube are the alternatives.
-
-**Why it matters:** it decides what the manifests are exercised against, and how node
-scaling and zone-loss rescheduling get demonstrated in I-1f.
-
-**When:** at the start of track B (I-1d). Nothing before then depends on it.
-
-### What provides S3-compatible storage on the runtime track?
-
-MinIO is the obvious candidate. Active Storage needs an S3-compatible endpoint, and the
-`aws-sdk-s3` gem plus a `storage.yml` service is the app-side change either way.
-
-**Why it matters:** it is one of the three app changes deploying forces, and it is the one
-with no local default the way PostgreSQL has.
-
-**When:** I-1e, when the app first needs somewhere to put an avatar that survives a redeploy.
-
-### Shared cache: Solid Cache or Redis?
-
-The ranked-feed cache and rate limiter are per-process memory, which breaks at two replicas.
-Solid Cache rides on Postgres and adds no service; Redis is the conventional answer and will
-be wanted for Sidekiq eventually anyway.
-
-**Why it matters:** picking Solid Cache now and Redis later means doing the work twice;
-picking Redis now adds a service before anything needs it.
-
-**When:** the moment the deployment scales past one replica — during I-1e or I-1f, on the
-runtime track.
+Tracked in [JDSG-Group6-infra](https://github.com/GauranshMathur/JDSG-Group6-infra/blob/main/docs/open-questions.md), along with the
+decisions behind it. Three of them force a change *here* when they are answered — PostgreSQL,
+a shared cache to replace the per-process one, and S3 for Active Storage — and each is made
+when it blocks, not before.
 
 ---
 
@@ -149,17 +109,17 @@ the release will ship it.
 **When:** now. This is configuration rather than work — see N-4.2 and N-4.2a in
 [`REQUIREMENTS.md`](../REQUIREMENTS.md).
 
-**Require exactly one check: `CI`.** Since the pipelines became parent and child workflows,
-requiring the individual jobs would deadlock. A reusable workflow that is never called
-contributes no check runs at all, so requiring `App / Lint` would leave every
-infrastructure-only pull request waiting forever for a status that is never coming — the
-same trap `paths-ignore` sets. `ci.yml`'s `CI` job exists for this: it always runs, `needs` every child, and is red if
-any pipeline that ran came back red. See [`ci-cd.md`](ci-cd.md).
+**Only `SAST` is safe to require today.** `ci.yml` is filtered by `paths` on its trigger, and
+a workflow that is never triggered reports nothing at all — so requiring `Lint` would leave
+every documentation-only pull request waiting forever for a status that is never coming.
+`security.yml` is deliberately unfiltered, so `SAST` is always present. Requiring anything
+from `ci.yml` needs either a change of shape or an always-running aggregate job. See
+[`ci-cd.md`](ci-cd.md).
 
 `Trivy` is *not* a job either — it is a code-scanning check created by the SARIF upload. It
-reports on every pull request only because the filesystem scan uploads from the security
-pipeline, which is never routed around. If that upload were ever removed, requiring `Trivy`
-would hang every pull request that skips the container build.
+reports on every pull request only because the filesystem scan uploads from `security.yml`.
+If that upload were ever removed, requiring `Trivy` would hang every pull request that skips
+the container build.
 
 ### Should the DAST scan fail the build?
 
